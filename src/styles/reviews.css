@@ -1,0 +1,56 @@
+@keyframes scrollUp {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
+  }
+}
+
+@keyframes scrollDown {
+  from {
+    transform: translateY(-50%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.animate-scroll {
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-font-smoothing: subpixel-antialiased;
+}
+
+.animate-scroll:hover {
+  animation-play-state: paused !important;
+}
+
+/* Individual review card hover effects */
+.review-card {
+  will-change: background-color;
+  transition: background-color 0.3s ease;
+}
+
+/* Smooth scroll effect */
+.animate-scroll {
+  animation-timing-function: linear !important;
+  animation-iteration-count: infinite !important;
+}
+
+/* Add padding to prevent overlap with section title */
+.animate-scroll {
+  padding-top: 1rem;
+}
+
+/* Pause animation on reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .animate-scroll {
+    animation: none !important;
+  }
+
+  .review-card {
+    transition: none !important;
+  }
+}

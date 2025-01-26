@@ -32,13 +32,13 @@ const repairs = [
 
 export default function Pricing() {
   return (
-    <section id="pricing" className="bg-body-background py-24 dark:bg-dark">
+    <section id="pricing" className="bg-background-light dark:bg-background-dark py-24">
       <div className="container mx-auto px-4">
         <div className="mb-16 text-center">
-          <h2 className="mb-4 text-4xl font-bold text-dark dark:text-white">
+          <h2 className="mb-4 text-4xl font-bold text-brand dark:text-text-inverse">
             Transparent Pricing
           </h2>
-          <p className="mx-auto max-w-2xl text-body dark:text-body">
+          <p className="mx-auto max-w-2xl text-text-dark dark:text-text-inverse/80">
             All repairs come with a 90-day warranty and our satisfaction guarantee. Contact us for a detailed quote for your specific model.
           </p>
         </div>
@@ -47,25 +47,25 @@ export default function Pricing() {
           {repairs.map((category) => (
             <div
               key={category.device}
-              className="rounded-2xl border border-body/10 bg-white p-8 shadow-lg dark:border-dark/10 dark:bg-dark/50"
+              className="rounded-2xl border border-neutral-300 bg-white p-8 shadow-lg transition-all hover:shadow-xl dark:border-neutral-700 dark:bg-background-darker"
             >
-              <h3 className="mb-6 text-2xl font-bold text-dark dark:text-white">
+              <h3 className="mb-6 text-2xl font-bold text-brand dark:text-text-inverse">
                 {category.device}
               </h3>
               <div className="space-y-4">
                 {category.services.map((service) => (
                   <div
                     key={service.name}
-                    className="flex items-center justify-between border-b border-body/10 pb-4 dark:border-dark/10"
+                    className="flex items-center justify-between border-b border-neutral-200 pb-4 last:border-0 dark:border-neutral-700"
                   >
-                    <span className="text-dark dark:text-body">{service.name}</span>
-                    <span className="font-medium text-primary">${service.price}</span>
+                    <span className="text-text-dark dark:text-text-inverse/90">{service.name}</span>
+                    <span className="font-medium text-brand dark:text-accent">${service.price}</span>
                   </div>
                 ))}
               </div>
               <Link
                 href="#contact"
-                className="mt-8 block rounded-full bg-primary px-6 py-3 text-center font-medium text-white hover:bg-primary-hover"
+                className="mt-8 block rounded-full bg-brand px-6 py-3 text-center font-medium text-white transition-colors hover:bg-brand-light dark:bg-accent dark:hover:bg-accent-light"
               >
                 Book Repair
               </Link>
@@ -73,10 +73,10 @@ export default function Pricing() {
           ))}
         </div>
 
-        <div className="mt-16 rounded-2xl bg-primary/5 p-8 text-center dark:bg-primary/10">
-          <p className="text-lg text-dark dark:text-white">
+        <div className="mt-16 rounded-2xl bg-white/50 p-8 text-center shadow-lg transition-all hover:shadow-xl dark:bg-background-darker/50">
+          <p className="text-lg text-text-dark dark:text-text-inverse">
             Need a repair not listed here?{" "}
-            <Link href="#contact" className="font-medium text-primary hover:underline">
+            <Link href="#contact" className="font-medium text-brand transition-colors hover:text-brand-light dark:text-accent dark:hover:text-accent-light">
               Contact us
             </Link>{" "}
             for a custom quote.
