@@ -43,19 +43,26 @@ export default function Reviews() {
 
   // Function to create review columns with different starting points
   const createColumns = useCallback((reviews: Review[]) => {
-    // Create a longer sequence of reviews for smoother infinite scroll
-    const duplicatedReviews = [...reviews, ...reviews, ...reviews, ...reviews]
+    // Ensure we have at least 15 unique reviews by duplicating if needed
+    let extendedReviews = [...reviews]
+    while (extendedReviews.length < 15) {
+      extendedReviews = [...extendedReviews, ...reviews]
+    }
+
     const columns = []
-    const itemsPerColumn = Math.ceil(duplicatedReviews.length / 3)
+    // We want 5 unique reviews per column
+    const itemsPerColumn = 5
 
     for (let i = 0; i < 3; i++) {
-      // Offset each column's starting point for visual variety
-      const startIndex = i * Math.floor(reviews.length / 3)
+      // Take 5 unique reviews for each column, starting from different positions
+      const startIndex = i * itemsPerColumn
       const columnReviews = [
-        ...duplicatedReviews.slice(startIndex),
-        ...duplicatedReviews.slice(0, startIndex)
+        ...extendedReviews.slice(startIndex, startIndex + itemsPerColumn),
+        ...extendedReviews.slice(startIndex, startIndex + itemsPerColumn),
+        ...extendedReviews.slice(startIndex, startIndex + itemsPerColumn),
+        ...extendedReviews.slice(startIndex, startIndex + itemsPerColumn)
       ]
-      columns.push(columnReviews.slice(0, itemsPerColumn))
+      columns.push(columnReviews)
     }
 
     return columns
@@ -122,27 +129,27 @@ export default function Reviews() {
       </div>
 
       {/* Reviews Section */}
-      <div className="relative overflow-hidden h-[500px]">
+      <div className="relative overflow-hidden h-[600px]">
         {/* Gradient overlays */}
-        <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-background-light dark:from-background-darker to-transparent z-20" />
-        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-background-light dark:from-background-darker to-transparent z-20" />
+        <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-background-light dark:from-background-darker to-transparent z-20" />
+        <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-background-light dark:from-background-darker to-transparent z-20" />
 
         {/* Reviews grid */}
         <div className="relative z-10 container mx-auto px-4">
-          <div className="grid grid-cols-3 gap-4 max-w-7xl mx-auto">
+          <div className="grid grid-cols-3 gap-6 max-w-7xl mx-auto">
             {columns.map((column, columnIndex) => (
               <div
                 key={columnIndex}
-                className="space-y-4 animate-scroll"
+                className="space-y-6 animate-scroll"
                 style={{
-                  animation: `scroll${columnIndex % 2 === 0 ? 'Down' : 'Up'} ${30 + columnIndex * 5}s linear infinite`,
-                  animationDelay: `${columnIndex * -4}s`
+                  animation: `scroll${columnIndex % 2 === 0 ? 'Down' : 'Up'} ${40 + columnIndex * 5}s linear infinite`,
+                  animationDelay: `${columnIndex * -8}s`
                 }}
               >
                 {column.map((review, index) => (
                   <div
                     key={`${review.time}-${index}`}
-                    className="review-card rounded-xl border border-neutral-200/10 dark:border-[rgb(254,249,225)]/10 bg-white/[0.02] dark:bg-white/[0.02] backdrop-blur-sm p-5 transition-colors duration-300 hover:bg-white/[0.04] dark:hover:bg-white/[0.04]"
+                    className="review-card rounded-xl border border-neutral-200/10 dark:border-[rgb(254,249,225)]/10 bg-white/[0.02] dark:bg-white/[0.02] backdrop-blur-sm p-6 transition-colors duration-300 hover:bg-white/[0.04] dark:hover:bg-white/[0.04]"
                   >
                     <div className="flex items-center mb-3">
                       <div className="flex-shrink-0">
