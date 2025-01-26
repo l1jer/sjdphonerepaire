@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { Redis } from '@upstash/redis'
 
 interface Review {
   authorAttribution: {
@@ -19,53 +20,158 @@ interface PlaceResponse {
   userRatingCount?: number
 }
 
+interface PlaceDetailsResponse {
+  result: {
+    reviews: Array<{
+      author_name: string
+      author_url: string
+      profile_photo_url: string
+      rating: number
+      relative_time_description: string
+      text: string
+      time: number
+      language?: string
+      translated: boolean
+    }>
+    rating: number
+    user_ratings_total: number
+    next_page_token?: string
+  }
+  status: string
+}
+
+// Initialize Redis client
+const redis = new Redis({
+  url: process.env.reviews_KV_REST_API_URL || '',
+  token: process.env.reviews_KV_REST_API_TOKEN || ''
+})
+
+// Test Redis connection
+redis
+  .ping()
+  .then(() => {
+    console.log('Redis connection successful!')
+  })
+  .catch(error => {
+    console.error('Redis connection failed:', error)
+  })
+
 // Use GOOGLE_PLACES_API_KEY instead of NEXT_PUBLIC_ version for server-side
 const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_PLACES_API_KEY
 const PLACE_ID = 'ChIJncP4AAw51GoRHBRenZ9MLxg'
+const CACHE_KEY = 'google_reviews_cache'
+const CACHE_DURATION = 24 * 60 * 60 // 24 hours in seconds
+const HISTORICAL_CACHE_KEY = 'google_reviews_historical'
 
-export async function GET() {
+async function getAllReviews (placeId: string, apiKey: string): Promise<any[]> {
+  let allReviews: any[] = []
+  const sortTypes = ['most_relevant', 'newest', 'highest_rating']
+
+  for (const sortType of sortTypes) {
+    // 构建基础 URL
+    const url = new URL(
+      'https://maps.googleapis.com/maps/api/place/details/json'
+    )
+    url.searchParams.append('place_id', placeId)
+    url.searchParams.append('key', apiKey)
+    url.searchParams.append('language', 'en')
+    url.searchParams.append('reviews_sort', sortType)
+    url.searchParams.append('reviews_no_translations', 'true')
+
+    console.log(`Fetching reviews with sort type: ${sortType}`)
+    const response = await fetch(url.toString())
+    const data: PlaceDetailsResponse = await response.json()
+
+    if (data.status !== 'OK') {
+      console.error(`API error for ${sortType}:`, data.status)
+      continue
+    }
+
+    if (data.result.reviews) {
+      // 使用 Set 来去重，基于评论的时间戳和作者
+      const newReviews = data.result.reviews.filter(
+        newReview =>
+          !allReviews.some(
+            existingReview =>
+              existingReview.time === newReview.time &&
+              existingReview.author_name === newReview.author_name
+          )
+      )
+
+      allReviews = [...allReviews, ...newReviews]
+      console.log(
+        `Fetched ${newReviews.length} unique reviews from ${sortType}. Total unique reviews: ${allReviews.length}`
+      )
+    }
+
+    // Google API 限制请求频率，添加延迟
+    await new Promise(resolve => setTimeout(resolve, 2000))
+  }
+
+  // 按时间排序，最新的在前
+  return allReviews.sort((a, b) => b.time - a.time)
+}
+
+// API route for handling reviews
+export async function GET () {
   if (!GOOGLE_PLACES_API_KEY) {
+    console.error('API key missing')
     return NextResponse.json(
       { error: 'Google Places API key not configured' },
       { status: 500 }
     )
   }
 
-  const url = new URL(`https://places.googleapis.com/v1/places/${PLACE_ID}`)
-
   try {
-    const response = await fetch(url.toString(), {
-      headers: {
-        'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY,
-        'X-Goog-FieldMask': 'reviews,rating,userRatingCount'
-      }
-    })
+    console.log('Checking Redis cache...')
+    const cachedData = await redis.get(CACHE_KEY)
+    if (cachedData) {
+      console.log('Cache hit! Serving from Redis cache')
+      return NextResponse.json(cachedData)
+    }
+    console.log('Cache miss! Fetching from Google API...')
 
-    if (!response.ok) {
-      console.error('Places API error:', await response.text())
-      return NextResponse.json(
-        { error: `Places API error: ${response.status} ${response.statusText}` },
-        { status: 500 }
-      )
+    // 获取所有评论
+    const allReviews = await getAllReviews(PLACE_ID, GOOGLE_PLACES_API_KEY)
+
+    // 获取基本信息
+    const basicInfoUrl = new URL(
+      'https://maps.googleapis.com/maps/api/place/details/json'
+    )
+    basicInfoUrl.searchParams.append('place_id', PLACE_ID)
+    basicInfoUrl.searchParams.append('key', GOOGLE_PLACES_API_KEY)
+    basicInfoUrl.searchParams.append('fields', 'rating,user_ratings_total')
+
+    const basicInfoResponse = await fetch(basicInfoUrl.toString())
+    const basicInfoData: PlaceDetailsResponse = await basicInfoResponse.json()
+
+    const responseData = {
+      reviews: allReviews,
+      rating: basicInfoData.result.rating || 0,
+      user_ratings_total: basicInfoData.result.user_ratings_total || 0,
+      cache_timestamp: new Date().toISOString(),
+      reviews_count: allReviews.length
     }
 
-    const data: PlaceResponse = await response.json()
-    console.log('Places API response:', data)
+    // Store in Redis cache with expiration
+    await redis.set(CACHE_KEY, responseData, {
+      ex: CACHE_DURATION
+    })
 
-    // Transform the reviews to match the expected format
-    const transformedReviews = data.reviews?.map(review => ({
-      author_name: review.authorAttribution.displayName,
-      profile_photo_url: review.authorAttribution.photoUri || '',
-      rating: review.rating,
-      relative_time_description: review.relativePublishTimeDescription,
-      text: review.text.text,
-      time: new Date(review.publishTime).getTime()
-    })) || []
+    // Get historical data if available
+    const historicalData = await redis.get(HISTORICAL_CACHE_KEY)
+    if (historicalData) {
+      responseData.historical_reviews = historicalData.reviews
+      responseData.total_historical_count = historicalData.reviews.length
+      responseData.historical_last_updated = historicalData.last_updated
+    }
 
-    return NextResponse.json({
-      reviews: transformedReviews,
-      rating: data.rating || 0,
-      user_ratings_total: data.userRatingCount || 0
+    console.log('Total reviews collected:', allReviews.length)
+
+    return NextResponse.json(responseData, {
+      headers: {
+        'Cache-Control': `public, max-age=${CACHE_DURATION}, stale-while-revalidate=${CACHE_DURATION}`
+      }
     })
   } catch (error) {
     console.error('Error fetching reviews:', error)

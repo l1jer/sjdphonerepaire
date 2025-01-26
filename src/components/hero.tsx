@@ -30,7 +30,7 @@ export default function Hero() {
           </div>
         </div>
 
-        <div className="mt-16 grid grid-cols-2 gap-8 text-center md:grid-cols-4">
+        {/* <div className="mt-16 grid grid-cols-2 gap-8 text-center md:grid-cols-4">
           {[
             { number: "10+", label: "Years Experience" },
             { number: "50k+", label: "Repairs Completed" },
@@ -46,7 +46,7 @@ export default function Hero() {
               </div>
             </div>
           ))}
-        </div>
+        </div> */}
       </div>
 
       {/* Decorative background elements */}

@@ -19,17 +19,45 @@ interface ReviewsData {
   user_ratings_total: number
 }
 
+const CACHE_KEY = 'googleReviewsCache'
+const CACHE_DURATION = 24 * 60 * 60 * 1000 // 24 hours in milliseconds
+
 export default function Reviews() {
   const [data, setData] = useState<ReviewsData | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    async function loadReviews() {
+    const loadReviews = async () => {
       try {
+        // Check local storage for cached data
+        const cachedData = localStorage.getItem(CACHE_KEY)
+        const cachedTime = localStorage.getItem(`${CACHE_KEY}_timestamp`)
+
+        if (cachedData && cachedTime) {
+          const parsedData = JSON.parse(cachedData)
+          const cacheAge = Date.now() - parseInt(cachedTime)
+
+          if (cacheAge < CACHE_DURATION) {
+            setData(parsedData)
+            setError(null)
+            setLoading(false)
+            // Log cached reviews
+            console.log('Loaded reviews from cache:', JSON.stringify(parsedData.reviews, null, 2))
+            return
+          }
+        }
+
+        // If cache is expired or doesn't exist, fetch new data
         const result = await fetchGoogleReviews()
         setData(result)
         setError(null)
+        // Log fetched reviews
+        console.log('Fetched reviews from API:', JSON.stringify(result.reviews, null, 2))
+
+        // Update cache
+        localStorage.setItem(CACHE_KEY, JSON.stringify(result))
+        localStorage.setItem(`${CACHE_KEY}_timestamp`, Date.now().toString())
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load reviews')
         setData(null)
@@ -43,27 +71,23 @@ export default function Reviews() {
 
   // Function to create review columns with different starting points
   const createColumns = useCallback((reviews: Review[]) => {
-    // Ensure we have at least 15 unique reviews by duplicating if needed
-    let extendedReviews = [...reviews]
-    while (extendedReviews.length < 15) {
-      extendedReviews = [...extendedReviews, ...reviews]
+    // Copy reviews array to avoid modifying original data
+    let allReviews = [...reviews]
+
+    // If there aren't enough reviews, duplicate them to reach minimum length
+    while (allReviews.length < 15) {
+      allReviews = [...allReviews, ...reviews]
     }
 
-    const columns = []
-    // We want 5 unique reviews per column
-    const itemsPerColumn = 5
+    // Create three columns, each containing different reviews
+    const columns = Array(3).fill(null).map((_, columnIndex) => {
+      // Select 5 different reviews for each column
+      const startIndex = columnIndex * 5
+      const columnReviews = allReviews.slice(startIndex, startIndex + 5)
 
-    for (let i = 0; i < 3; i++) {
-      // Take 5 unique reviews for each column, starting from different positions
-      const startIndex = i * itemsPerColumn
-      const columnReviews = [
-        ...extendedReviews.slice(startIndex, startIndex + itemsPerColumn),
-        ...extendedReviews.slice(startIndex, startIndex + itemsPerColumn),
-        ...extendedReviews.slice(startIndex, startIndex + itemsPerColumn),
-        ...extendedReviews.slice(startIndex, startIndex + itemsPerColumn)
-      ]
-      columns.push(columnReviews)
-    }
+      // Repeat these 5 reviews 4 times to create scrolling effect
+      return Array(4).fill(columnReviews).flat()
+    })
 
     return columns
   }, [])
@@ -109,11 +133,10 @@ export default function Reviews() {
                 {[...Array(5)].map((_, i) => (
                   <svg
                     key={i}
-                    className={`h-6 w-6 ${
-                      i < Math.round(data.rating)
-                        ? 'text-brand dark:text-[rgb(254,249,225)]'
-                        : 'text-brand/20 dark:text-[rgb(254,249,225)]/20'
-                    }`}
+                    className={`h-6 w-6 ${i < Math.round(data.rating)
+                      ? 'text-brand dark:text-[rgb(254,249,225)]'
+                      : 'text-brand/20 dark:text-[rgb(254,249,225)]/20'
+                      }`}
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -153,17 +176,16 @@ export default function Reviews() {
                   >
                     <div className="flex items-center mb-3">
                       <div className="flex-shrink-0">
-                        {review.profile_photo_url ? (
-                          <img
-                            src={review.profile_photo_url}
-                            alt={`${review.author_name}'s profile`}
-                            className="h-10 w-10 rounded-full ring-2 ring-[rgb(254,249,225)]/10"
-                          />
-                        ) : (
-                          <div className="h-10 w-10 rounded-full bg-[rgb(254,249,225)]/5 text-[rgb(254,249,225)] ring-2 ring-[rgb(254,249,225)]/10 flex items-center justify-center text-sm font-medium">
-                            {review.author_name.charAt(0)}
-                          </div>
-                        )}
+                        <img
+                          src={review.profile_photo_url}
+                          alt={`${review.author_name}'s profile`}
+                          className="h-10 w-10 rounded-full ring-2 ring-[rgb(254,249,225)]/10"
+                          onError={(e) => {
+                            // If image fails to load, use initials avatar as fallback
+                            const target = e.target as HTMLImageElement;
+                            target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(review.author_name)}&background=random`;
+                          }}
+                        />
                       </div>
                       <div className="ml-3">
                         <h3 className="text-sm font-medium text-[rgb(254,249,225)]">
@@ -174,11 +196,10 @@ export default function Reviews() {
                             {[...Array(5)].map((_, i) => (
                               <svg
                                 key={i}
-                                className={`h-4 w-4 ${
-                                  i < review.rating
-                                    ? 'text-[rgb(254,249,225)]'
-                                    : 'text-[rgb(254,249,225)]/20'
-                                }`}
+                                className={`h-4 w-4 ${i < review.rating
+                                  ? 'text-[rgb(254,249,225)]'
+                                  : 'text-[rgb(254,249,225)]/20'
+                                  }`}
                                 fill="currentColor"
                                 viewBox="0 0 20 20"
                               >
