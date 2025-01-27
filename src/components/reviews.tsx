@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { fetchGoogleReviews } from "@/services/googlePlaces"
+import Image from "next/image"
 import "@/styles/reviews.css"
 
 interface Review {
@@ -176,10 +177,12 @@ export default function Reviews() {
                   >
                     <div className="flex items-center mb-3">
                       <div className="flex-shrink-0">
-                        <img
+                        <Image
                           src={review.profile_photo_url}
                           alt={`${review.author_name}'s profile`}
-                          className="h-10 w-10 rounded-full ring-2 ring-brand/10 dark:ring-[rgb(254,249,225)]/10"
+                          width={40}
+                          height={40}
+                          className="rounded-full ring-2 ring-brand/10 dark:ring-[rgb(254,249,225)]/10"
                           onError={(e) => {
                             // If image fails to load, use initials avatar as fallback
                             const target = e.target as HTMLImageElement;

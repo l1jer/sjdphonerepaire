@@ -70,7 +70,7 @@ async function getAllReviews (
   const sortTypes = ['most_relevant', 'newest', 'highest_rating']
 
   for (const sortType of sortTypes) {
-    // 构建基础 URL
+    // Build base URL
     const url = new URL(
       'https://maps.googleapis.com/maps/api/place/details/json'
     )
@@ -90,7 +90,7 @@ async function getAllReviews (
     }
 
     if (data.result.reviews) {
-      // 使用 Set 来去重，基于评论的时间戳和作者
+      // Use Set for deduplication based on timestamp and author
       const newReviews = data.result.reviews.filter(
         newReview =>
           !allReviews.some(
@@ -106,11 +106,11 @@ async function getAllReviews (
       )
     }
 
-    // Google API 限制请求频率，添加延迟
+    // Google API rate limiting, add delay
     await new Promise(resolve => setTimeout(resolve, 2000))
   }
 
-  // 按时间排序，最新的在前
+  // Sort by time, newest first
   return allReviews.sort((a, b) => b.time - a.time)
 }
 
