@@ -1,6 +1,21 @@
 import { NextResponse } from 'next/server'
 import { Redis } from '@upstash/redis'
 
+interface Review {
+  time: number
+  author_name: string
+}
+
+interface CachedData {
+  reviews: Review[]
+}
+
+interface HistoricalData {
+  reviews: Review[]
+  last_updated: string
+  total_collected: number
+}
+
 const redis = new Redis({
   url: process.env.reviews_KV_REST_API_URL || '',
   token: process.env.reviews_KV_REST_API_TOKEN || ''
@@ -8,7 +23,6 @@ const redis = new Redis({
 
 const CACHE_KEY = 'google_reviews_cache'
 const HISTORICAL_CACHE_KEY = 'google_reviews_historical'
-const CACHE_DURATION = 48 * 60 * 60 // 48 hours in seconds
 
 export async function GET (request: Request) {
   // Verify cron secret to ensure this is a legitimate cron job
@@ -21,12 +35,16 @@ export async function GET (request: Request) {
 
   try {
     // Get current cached reviews
-    const currentCache = await redis.get(CACHE_KEY)
+    const currentCache = await redis.get<CachedData>(CACHE_KEY)
 
     if (currentCache) {
       // Get historical reviews
-      let historicalReviews = (await redis.get(HISTORICAL_CACHE_KEY)) || {
-        reviews: []
+      const historicalReviews = (await redis.get<HistoricalData>(
+        HISTORICAL_CACHE_KEY
+      )) || {
+        reviews: [],
+        last_updated: new Date().toISOString(),
+        total_collected: 0
       }
 
       // Merge new reviews with historical data
@@ -62,7 +80,7 @@ export async function GET (request: Request) {
   }
 }
 
-function mergeReviews (historical: any[], current: any[]): any[] {
+function mergeReviews (historical: Review[], current: Review[]): Review[] {
   // Create a Set of existing review IDs (using time + author as unique identifier)
   const existingReviews = new Set(
     historical.map(review => `${review.time}_${review.author_name}`)

@@ -2,42 +2,41 @@ import { NextResponse } from 'next/server'
 import { Redis } from '@upstash/redis'
 
 interface Review {
-  authorAttribution: {
-    displayName: string
-    photoUri?: string
-  }
-  text: {
-    text: string
-  }
+  author_name: string
+  author_url: string
+  profile_photo_url: string
   rating: number
-  publishTime: string
-  relativePublishTimeDescription: string
-}
-
-interface PlaceResponse {
-  reviews?: Review[]
-  rating?: number
-  userRatingCount?: number
+  relative_time_description: string
+  text: string
+  time: number
+  language?: string
+  translated: boolean
 }
 
 interface PlaceDetailsResponse {
   result: {
-    reviews: Array<{
-      author_name: string
-      author_url: string
-      profile_photo_url: string
-      rating: number
-      relative_time_description: string
-      text: string
-      time: number
-      language?: string
-      translated: boolean
-    }>
+    reviews: Review[]
     rating: number
     user_ratings_total: number
     next_page_token?: string
   }
   status: string
+}
+
+interface HistoricalData {
+  reviews: Review[]
+  last_updated: string
+}
+
+interface ResponseData {
+  reviews: Review[]
+  rating: number
+  user_ratings_total: number
+  cache_timestamp: string
+  reviews_count: number
+  historical_reviews?: Review[]
+  total_historical_count?: number
+  historical_last_updated?: string
 }
 
 // Initialize Redis client
@@ -63,8 +62,11 @@ const CACHE_KEY = 'google_reviews_cache'
 const CACHE_DURATION = 24 * 60 * 60 // 24 hours in seconds
 const HISTORICAL_CACHE_KEY = 'google_reviews_historical'
 
-async function getAllReviews (placeId: string, apiKey: string): Promise<any[]> {
-  let allReviews: any[] = []
+async function getAllReviews (
+  placeId: string,
+  apiKey: string
+): Promise<Review[]> {
+  let allReviews: Review[] = []
   const sortTypes = ['most_relevant', 'newest', 'highest_rating']
 
   for (const sortType of sortTypes) {
@@ -145,7 +147,7 @@ export async function GET () {
     const basicInfoResponse = await fetch(basicInfoUrl.toString())
     const basicInfoData: PlaceDetailsResponse = await basicInfoResponse.json()
 
-    const responseData = {
+    const responseData: ResponseData = {
       reviews: allReviews,
       rating: basicInfoData.result.rating || 0,
       user_ratings_total: basicInfoData.result.user_ratings_total || 0,
@@ -159,7 +161,7 @@ export async function GET () {
     })
 
     // Get historical data if available
-    const historicalData = await redis.get(HISTORICAL_CACHE_KEY)
+    const historicalData = await redis.get<HistoricalData>(HISTORICAL_CACHE_KEY)
     if (historicalData) {
       responseData.historical_reviews = historicalData.reviews
       responseData.total_historical_count = historicalData.reviews.length
