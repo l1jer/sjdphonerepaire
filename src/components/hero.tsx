@@ -2,57 +2,53 @@ import Link from "next/link"
 
 export default function Hero() {
   return (
-    <section className="relative overflow-hidden bg-background-light dark:bg-background-dark pt-24 pb-16">
+    <section className="relative overflow-hidden bg-background-light dark:bg-background-dark min-h-[90vh] flex items-center py-32">
       <div className="container mx-auto px-4">
-        <div className="relative z-10 flex flex-col items-center text-center">
-          <h1 className="mb-6 text-5xl font-bold tracking-tight text-brand dark:text-text-inverse md:text-6xl lg:text-7xl">
-            Expert Phone Repair
-            <br />
-            <span className="text-text-dark dark:text-accent">When You Need It</span>
-          </h1>
-          <p className="mb-8 max-w-2xl text-lg text-brand dark:text-text-inverse/90 md:text-xl">
-            Professional repair service for all major phone brands. Fast, reliable,
-            and backed by our satisfaction guarantee.
-          </p>
-          <div className="flex flex-col space-y-4 sm:flex-row sm:space-x-4 sm:space-y-0">
-            <Link
-              href="#contact"
-              className="rounded-full bg-brand px-8 py-3 text-lg font-medium text-background-light hover:bg-brand-light transition-colors dark:bg-accent dark:hover:bg-accent-light"
-            >
-              Contact Us
-            </Link>
-            <Link
-              href="#pricing"
-              className="rounded-full border-2 border-brand bg-transparent px-8 py-3 text-lg font-medium text-brand hover:bg-brand hover:text-background-light transition-colors dark:border-accent dark:text-accent dark:hover:bg-accent dark:hover:text-background-dark"
-            >
-              View Pricing
-            </Link>
+        <div className="relative z-10 max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <div className="text-left space-y-8">
+              <h1 className="text-6xl font-bold tracking-tight text-brand dark:text-text-inverse md:text-7xl lg:text-8xl">
+                Expert Phone Repair
+                <span className="block mt-4 text-text-dark dark:text-accent">When You Need It</span>
+              </h1>
+
+              <div className="flex flex-col sm:flex-row gap-6">
+                <Link
+                  href="#contact"
+                  className="rounded-full bg-brand px-10 py-4 text-xl font-medium text-background-light hover:bg-brand-light transition-colors dark:bg-accent dark:hover:bg-accent-light text-center"
+                >
+                  Contact Us
+                </Link>
+                <Link
+                  href="#pricing"
+                  className="rounded-full border-3 border-brand bg-transparent px-10 py-4 text-xl font-medium text-brand hover:bg-brand hover:text-background-light transition-colors dark:border-accent dark:text-accent dark:hover:bg-accent dark:hover:text-background-dark text-center"
+                >
+                  View Pricing
+                </Link>
+              </div>
+            </div>
+
+            <div className="text-left space-y-6">
+              <p className="text-lg text-brand dark:text-text-inverse/90 md:text-2xl leading-relaxed">
+                SJD Tech is a skilled team specialising in mobile phone and accessory repairs. We pride ourselves on using high-quality components and offering services at the most competitive prices.
+              </p>
+
+              <p className="text-lg text-brand dark:text-text-inverse/90 md:text-2xl leading-relaxed">
+                Our repairs are fast, reliable, and affordable, with screen repairs often completed in just 30 minutes. We service a wide range of phones and tablets, including iPhone, Samsung, iPad, OPPO, and Google devices.
+              </p>
+
+              <p className="text-lg text-brand dark:text-text-inverse/90 md:text-2xl leading-relaxed">
+                Additionally, we offer a variety of accessories such as protective cases, screen protectors, chargers, cables, car accessories, batteries, and earphones. Visit us at our location in Ocean Grove, Geelong, for all your mobile repair needs.
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* <div className="mt-16 grid grid-cols-2 gap-8 text-center md:grid-cols-4">
-          {[
-            { number: "10+", label: "Years Experience" },
-            { number: "50k+", label: "Repairs Completed" },
-            { number: "4.9", label: "Average Rating" },
-            { number: "90min", label: "Average Repair Time" },
-          ].map((stat) => (
-            <div key={stat.label} className="group">
-              <div className="text-3xl font-bold text-brand group-hover:text-brand-light transition-colors dark:text-accent dark:group-hover:text-accent-light">
-                {stat.number}
-              </div>
-              <div className="mt-1 text-sm text-text-dark dark:text-text-inverse/80">
-                {stat.label}
-              </div>
-            </div>
-          ))}
-        </div> */}
+        {/* Decorative background elements */}
+        <div className="absolute left-0 right-0 top-0 h-96 bg-gradient-to-b from-background-DEFAULT to-transparent dark:from-background-darker" />
+        <div className="absolute -left-40 top-40 h-[600px] w-[600px] rounded-full bg-background-DEFAULT opacity-50 blur-3xl dark:bg-accent dark:opacity-10" />
+        <div className="absolute -right-40 top-40 h-[600px] w-[600px] rounded-full bg-background-DEFAULT opacity-50 blur-3xl dark:bg-accent dark:opacity-10" />
       </div>
-
-      {/* Decorative background elements */}
-      <div className="absolute left-0 right-0 top-0 h-96 bg-gradient-to-b from-background-DEFAULT to-transparent dark:from-background-darker" />
-      <div className="absolute -left-40 top-40 h-[500px] w-[500px] rounded-full bg-background-DEFAULT opacity-50 blur-3xl dark:bg-accent dark:opacity-10" />
-      <div className="absolute -right-40 top-40 h-[500px] w-[500px] rounded-full bg-background-DEFAULT opacity-50 blur-3xl dark:bg-accent dark:opacity-10" />
     </section>
   )
 }

@@ -75,18 +75,18 @@ export default function Reviews() {
     let allReviews = [...reviews]
 
     // If there aren't enough reviews, duplicate them to reach minimum length
-    while (allReviews.length < 15) {
+    while (allReviews.length < 9) {
       allReviews = [...allReviews, ...reviews]
     }
 
     // Create three columns, each containing different reviews
     const columns = Array(3).fill(null).map((_, columnIndex) => {
-      // Select 5 different reviews for each column
-      const startIndex = columnIndex * 5
-      const columnReviews = allReviews.slice(startIndex, startIndex + 5)
+      // Select 3 different reviews for each column
+      const startIndex = columnIndex * 3
+      const columnReviews = allReviews.slice(startIndex, startIndex + 3)
 
-      // Repeat these 5 reviews 4 times to create scrolling effect
-      return Array(4).fill(columnReviews).flat()
+      // Repeat these 3 reviews 2 times to create scrolling effect
+      return Array(2).fill(columnReviews).flat()
     })
 
     return columns
@@ -172,14 +172,14 @@ export default function Reviews() {
                 {column.map((review, index) => (
                   <div
                     key={`${review.time}-${index}`}
-                    className="review-card rounded-xl border border-neutral-200/10 dark:border-[rgb(254,249,225)]/10 bg-white/[0.02] dark:bg-white/[0.02] backdrop-blur-sm p-6 transition-colors duration-300 hover:bg-white/[0.04] dark:hover:bg-white/[0.04]"
+                    className="review-card rounded-xl border border-brand/10 dark:border-[rgb(254,249,225)]/10 bg-brand/[0.02] dark:bg-white/[0.02] backdrop-blur-sm p-6 transition-colors duration-300 hover:bg-brand/[0.04] dark:hover:bg-white/[0.04]"
                   >
                     <div className="flex items-center mb-3">
                       <div className="flex-shrink-0">
                         <img
                           src={review.profile_photo_url}
                           alt={`${review.author_name}'s profile`}
-                          className="h-10 w-10 rounded-full ring-2 ring-[rgb(254,249,225)]/10"
+                          className="h-10 w-10 rounded-full ring-2 ring-brand/10 dark:ring-[rgb(254,249,225)]/10"
                           onError={(e) => {
                             // If image fails to load, use initials avatar as fallback
                             const target = e.target as HTMLImageElement;
@@ -188,7 +188,7 @@ export default function Reviews() {
                         />
                       </div>
                       <div className="ml-3">
-                        <h3 className="text-sm font-medium text-[rgb(254,249,225)]">
+                        <h3 className="text-sm font-medium text-brand dark:text-[rgb(254,249,225)]">
                           {review.author_name}
                         </h3>
                         <div className="flex items-center">
@@ -197,8 +197,8 @@ export default function Reviews() {
                               <svg
                                 key={i}
                                 className={`h-4 w-4 ${i < review.rating
-                                  ? 'text-[rgb(254,249,225)]'
-                                  : 'text-[rgb(254,249,225)]/20'
+                                  ? 'text-brand dark:text-[rgb(254,249,225)]'
+                                  : 'text-brand/20 dark:text-[rgb(254,249,225)]/20'
                                   }`}
                                 fill="currentColor"
                                 viewBox="0 0 20 20"
@@ -207,13 +207,13 @@ export default function Reviews() {
                               </svg>
                             ))}
                           </div>
-                          <span className="ml-2 text-xs text-[rgb(254,249,225)]/60">
+                          <span className="ml-2 text-xs text-brand/60 dark:text-[rgb(254,249,225)]/60">
                             {review.relative_time_description}
                           </span>
                         </div>
                       </div>
                     </div>
-                    <p className="text-sm text-[rgb(254,249,225)]/80 line-clamp-3">
+                    <p className="text-sm text-brand/80 dark:text-[rgb(254,249,225)]/80">
                       {review.text}
                     </p>
                   </div>
