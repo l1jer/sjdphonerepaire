@@ -34,15 +34,11 @@ export default function Footer() {
                         <p className="text-sm text-gray-600 dark:text-gray-400">
                             Crafted by{' '}
                             <Link
-                                href="https://jerryli.me/"
+                                href="https://jerryli.me/df-studio"
                                 className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors font-medium"
                             >
-                                Jerry LI
+                                DF Studio
                             </Link>
-                            {' '}at{' '}
-                            <span className="text-primary-600 dark:text-primary-400 font-medium">
-                                Digolas Forge
-                            </span>
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-500">
                             © {currentYear} SJD Phone Repair. All rights reserved.
