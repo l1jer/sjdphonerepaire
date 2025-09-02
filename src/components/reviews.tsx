@@ -73,24 +73,31 @@ export default function Reviews() {
 
   // Function to create review columns for infinite scrolling
   const createColumns = useCallback((reviews: Review[]) => {
-    // Ensure we have enough reviews by duplicating if necessary
-    let allReviews = [...reviews]
-    while (allReviews.length < 15) { // Need at least 15 for 3 columns × 5 reviews
-      allReviews = [...allReviews, ...reviews]
-    }
-
+    // Redis cache now maintains exactly 15 reviews with rolling replacement
+    // No need for client-side duplication logic
+    const exactReviews = reviews.slice(0, 15)
+    
+    // For desktop: 3 columns with 5 reviews each
     const columnCount = 3
     const reviewsPerColumn = 5
 
     const columns = Array(columnCount).fill(null).map((_, columnIndex) => {
       const startIndex = columnIndex * reviewsPerColumn
-      const columnReviews = allReviews.slice(startIndex, startIndex + reviewsPerColumn)
+      const columnReviews = exactReviews.slice(startIndex, startIndex + reviewsPerColumn)
 
       // Create seamless infinite scroll by duplicating the column content
-      return [...columnReviews, ...columnReviews] // Double the content for seamless loop
+      return [...columnReviews, ...columnReviews] // Double for seamless loop
     })
 
     return columns
+  }, [])
+
+  // Function to create mobile single column layout
+  const createMobileColumn = useCallback((reviews: Review[]) => {
+    // Redis cache maintains exactly 15 reviews, use them all for mobile
+    const exactReviews = reviews.slice(0, 15)
+    // Double the content for seamless infinite scroll
+    return [...exactReviews, ...exactReviews]
   }, [])
 
   const ReviewCard = ({ review }: { review: Review }) => {
@@ -104,7 +111,7 @@ export default function Reviews() {
     };
 
     return (
-      <div id="reviews" className="flex flex-col gap-3 sm:gap-4 rounded-lg border p-3 sm:p-4">
+      <div className="flex flex-col gap-3 sm:gap-4 rounded-lg border-dashed border-2 p-3 sm:p-4">
         <div className="flex items-center gap-3 sm:gap-4">
           <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-primary text-xs sm:text-sm font-medium text-primary-foreground">
             {getInitials(review.author_name)}
@@ -167,9 +174,10 @@ export default function Reviews() {
   }
 
   const columns = createColumns(data.reviews)
+  const mobileColumn = createMobileColumn(data.reviews)
 
   return (
-    <section className="relative bg-background-light dark:bg-background-darker py-16 sm:py-20">
+    <section id="reviews" className="relative bg-background-light dark:bg-background-darker py-16 sm:py-20">
       {/* Title Section with higher z-index */}
       <div className="relative z-30 container mx-auto px-4 sm:px-6 mb-12 sm:mb-16">
         <div className="text-center">
@@ -207,9 +215,29 @@ export default function Reviews() {
         <div className="absolute inset-x-0 top-0 h-16 sm:h-24 md:h-32 bg-gradient-to-b from-background-light dark:from-background-darker to-transparent z-20" />
         <div className="absolute inset-x-0 bottom-0 h-16 sm:h-24 md:h-32 bg-gradient-to-t from-background-light dark:from-background-darker to-transparent z-20" />
 
-        {/* Reviews grid */}
-        <div className="relative z-10 container mx-auto px-4 sm:px-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-7xl mx-auto">
+        {/* Mobile: Single column with all 15 reviews */}
+        <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:hidden">
+          <div className="flex justify-center max-w-md mx-auto">
+            <div
+              className="animate-scroll w-full"
+              style={{
+                animation: `scrollDown 90s linear infinite`,
+                animationDelay: `-30s`
+              }}
+            >
+              {mobileColumn.map((review, reviewIndex) => (
+                <ReviewCard 
+                  key={`mobile_${review.time}_${reviewIndex}`} 
+                  review={review} 
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop: 3 columns with 5 reviews each */}
+        <div className="relative z-10 container mx-auto px-4 sm:px-6 hidden lg:block">
+          <div className="grid grid-cols-3 gap-6 max-w-7xl mx-auto">
             {columns.map((column, columnIndex) => (
               <div
                 key={columnIndex}
@@ -221,7 +249,7 @@ export default function Reviews() {
               >
                 {column.map((review, reviewIndex) => (
                   <ReviewCard 
-                    key={`${columnIndex}_${review.time}_${reviewIndex}`} 
+                    key={`desktop_${columnIndex}_${review.time}_${reviewIndex}`} 
                     review={review} 
                   />
                 ))}

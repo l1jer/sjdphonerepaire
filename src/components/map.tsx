@@ -9,10 +9,10 @@ export default function Map() {
       <div className="container relative mx-auto px-4 sm:px-6">
         <div className="mb-12 sm:mb-16 text-center">
           <h2 className="mb-4 text-2xl sm:text-3xl md:text-4xl font-bold text-brand dark:text-text-inverse">
-            Find Our Store
+            Visit Our Phone Repair Shop in Ocean Grove
           </h2>
           <p className="mx-auto max-w-2xl text-sm sm:text-base md:text-lg text-text-dark dark:text-text-inverse/80 leading-relaxed">
-            Located in the heart of Ocean Grove, we&apos;re here to provide expert phone repair services when you need them.
+            Located in Kingston Village Shopping Centre, Ocean Grove, Geelong. We&apos;re here to provide expert phone and tablet repair services when you need them most.
           </p>
         </div>
 

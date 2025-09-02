@@ -22,14 +22,19 @@ export default function Header() {
           {/* Company logo, bigger on mobile */}
           <img
             src="/sjd-phone-repair-logo.webp"
-            alt="SJD Phone & Tablet Repairs logo"
+            alt="SJD Tech Phone & Tablet Repairs - Professional mobile repair services in Ocean Grove, Geelong"
             className="h-16 w-16 sm:h-16 sm:w-16 md:h-20 md:w-20 object-contain"
             loading="lazy"
             decoding="async"
+            width="80"
+            height="80"
           />
         </Link>
 
         <nav className="hidden md:flex items-center space-x-6 lg:space-x-8">
+          <Link href="#about" className="text-sm lg:text-base text-dark hover:text-primary dark:text-body dark:hover:text-primary transition-colors">
+            About
+          </Link>
           <Link href="#pricing" className="text-sm lg:text-base text-dark hover:text-primary dark:text-body dark:hover:text-primary transition-colors">
             Pricing
           </Link>

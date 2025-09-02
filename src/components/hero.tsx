@@ -6,10 +6,23 @@ export default function Hero() {
       <div className="container mx-auto px-4 sm:px-6">
         <div className="relative z-10 max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-16 items-center">
-            <div className="text-left space-y-6 sm:space-y-8">
+            {/* Mobile: Image first, Desktop: Text first */}
+            <div className="relative order-1 lg:order-2">
+              <img
+                src="/hero-image.jpg"
+                alt="Expert phone repair technician at SJD Tech carefully repairing iPhone screen with professional tools in Ocean Grove workshop"
+                className="w-full h-auto rounded-2xl shadow-2xl object-cover"
+                loading="eager"
+                decoding="async"
+                width="600"
+                height="400"
+              />
+            </div>
+
+            <div className="text-left space-y-6 sm:space-y-8 order-2 lg:order-1">
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight text-brand dark:text-text-inverse leading-tight">
-                Don&apos;t panic, 
-                <span className="block mt-2 sm:mt-4 text-text-dark dark:text-accent">we can fast fix your mobile phone and tablet repairs.</span>
+                <span itemProp="name">Don&apos;t panic,</span> 
+                <span className="block mt-2 sm:mt-4 text-text-dark dark:text-accent">we can fast fix your mobile phone and tablet repairs in Ocean Grove.</span>
               </h1>
 
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
@@ -27,20 +40,6 @@ export default function Hero() {
                   View Pricing
                 </Link>
               </div>
-            </div>
-
-            <div className="text-left space-y-4 sm:space-y-6 mt-8 lg:mt-0">
-              <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-brand dark:text-text-inverse/90 leading-relaxed">
-                SJD Tech is a skilled team specialising in mobile phone and tablet repairs. We pride ourselves on using high-quality components and offering services at the most competitive prices.
-              </p>
-
-              <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-brand dark:text-text-inverse/90 leading-relaxed">
-                Our repairs are fast, reliable, and affordable, with screen repairs often completed in just 30 minutes. We service a wide range of phones and tablets, including iPhone, Samsung, iPad, OPPO, and Google devices.
-              </p>
-
-              <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-brand dark:text-text-inverse/90 leading-relaxed">
-                Additionally, we offer a variety of accessories such as protective cases, screen protectors, chargers, cables, car accessories, batteries, and earphones. Visit us at our location in Ocean Grove, Geelong, for all your mobile repair needs.
-              </p>
             </div>
           </div>
         </div>

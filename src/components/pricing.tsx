@@ -39,10 +39,10 @@ export default function Pricing() {
       <div className="container mx-auto px-4 sm:px-6">
         <div className="mb-12 sm:mb-16 text-center">
           <h2 className="mb-4 text-2xl sm:text-3xl md:text-4xl font-bold text-brand dark:text-text-inverse">
-            Transparent Pricing
+            Phone & Tablet Repair Pricing Ocean Grove
           </h2>
           <p className="mx-auto max-w-2xl text-sm sm:text-base md:text-lg text-text-dark dark:text-text-inverse/80 leading-relaxed">
-            All repairs come with a 90-day warranty and our satisfaction guarantee. Call us for a detailed quote for your specific model.
+            Transparent pricing for all phone and tablet repairs in Ocean Grove, Geelong. All repairs include a 90-day warranty and satisfaction guarantee. Call us for a detailed quote for your specific device model.
           </p>
         </div>
 

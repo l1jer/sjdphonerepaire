@@ -42,7 +42,8 @@ const HISTORICAL_CACHE_KEY = 'google_reviews_historical'
 
 async function getAllReviews(placeId: string, apiKey: string): Promise<Review[]> {
   let allReviews: Review[] = []
-  const sortTypes = ['most_relevant', 'newest', 'highest_rating']
+  // Expanded sort types to get more reviews
+  const sortTypes = ['most_relevant', 'newest', 'highest_rating', 'lowest_rating']
 
   for (const sortType of sortTypes) {
     try {
@@ -86,8 +87,8 @@ async function getAllReviews(placeId: string, apiKey: string): Promise<Review[]>
     }
   }
 
-  // Sort by time, newest first
-  return allReviews.sort((a, b) => b.time - a.time)
+  // Sort by time, newest first, and return exactly 15 reviews
+  return allReviews.sort((a, b) => b.time - a.time).slice(0, 15)
 }
 
 export async function GET(request: Request) {
@@ -124,13 +125,71 @@ export async function GET(request: Request) {
     const basicInfoResponse = await fetch(basicInfoUrl.toString())
     const basicInfoData: PlaceDetailsResponse = await basicInfoResponse.json()
 
+    // Implement rolling cache logic to maintain exactly 15 reviews
+    let finalReviews = allReviews
+
+    // Check if we have existing reviews in cache
+    const existingCache = await redis.get<ResponseData>(REVIEWS_CACHE_KEY)
+    
+    if (existingCache && existingCache.reviews) {
+      console.log(`[Weekly Sync] Found ${existingCache.reviews.length} existing reviews in cache`)
+      
+      // Merge existing and new reviews, removing duplicates
+      const existingReviews = existingCache.reviews
+      const mergedReviews = [...existingReviews]
+      
+      // Add new reviews that don't already exist
+      for (const newReview of allReviews) {
+        const exists = existingReviews.some(existing => 
+          existing.time === newReview.time && existing.author_name === newReview.author_name
+        )
+        if (!exists) {
+          mergedReviews.push(newReview)
+        }
+      }
+      
+      // Sort by time (newest first)
+      const sortedReviews = mergedReviews.sort((a, b) => b.time - a.time)
+      
+      // If we have fewer than 15 unique reviews, duplicate to reach 15
+      if (sortedReviews.length < 15) {
+        finalReviews = [...sortedReviews]
+        while (finalReviews.length < 15) {
+          const remainingSlots = 15 - finalReviews.length
+          const reviewsToAdd = sortedReviews.slice(0, Math.min(remainingSlots, sortedReviews.length))
+          finalReviews = [...finalReviews, ...reviewsToAdd]
+        }
+        console.log(`[Weekly Sync] Padded ${sortedReviews.length} unique reviews to ${finalReviews.length} total`)
+      } else {
+        // Take exactly 15 if we have more than 15
+        finalReviews = sortedReviews.slice(0, 15)
+        console.log(`[Weekly Sync] Rolling cache: ${mergedReviews.length} total → ${finalReviews.length} kept (15 limit)`)
+      }
+    } else {
+      // No existing cache, pad with duplicates if needed to reach exactly 15
+      if (allReviews.length > 0) {
+        finalReviews = [...allReviews]
+        
+        // Duplicate reviews to reach exactly 15
+        while (finalReviews.length < 15) {
+          const remainingSlots = 15 - finalReviews.length
+          const reviewsToAdd = allReviews.slice(0, Math.min(remainingSlots, allReviews.length))
+          finalReviews = [...finalReviews, ...reviewsToAdd]
+        }
+        
+        // Ensure exactly 15 reviews
+        finalReviews = finalReviews.slice(0, 15)
+      }
+      console.log(`[Weekly Sync] No existing cache, created initial set of ${finalReviews.length} reviews (from ${allReviews.length} originals)`)
+    }
+
     // Prepare response data
     const responseData: ResponseData = {
-      reviews: allReviews,
+      reviews: finalReviews,
       rating: basicInfoData.result.rating || 0,
       user_ratings_total: basicInfoData.result.user_ratings_total || 0,
       cache_timestamp: new Date().toISOString(),
-      reviews_count: allReviews.length,
+      reviews_count: finalReviews.length,
       sync_type: manualTrigger ? 'manual' : 'weekly'
     }
 

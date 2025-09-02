@@ -111,8 +111,8 @@ async function getAllReviews (
     await new Promise(resolve => setTimeout(resolve, 2000))
   }
 
-  // Sort by time, newest first
-  return allReviews.sort((a, b) => b.time - a.time)
+  // Sort by time, newest first, and return exactly 15 reviews
+  return allReviews.sort((a, b) => b.time - a.time).slice(0, 15)
 }
 
 // API route for handling reviews
@@ -158,17 +158,80 @@ export async function GET () {
     const basicInfoResponse = await fetch(basicInfoUrl.toString())
     const basicInfoData: PlaceDetailsResponse = await basicInfoResponse.json()
 
+    // Implement rolling cache logic to maintain exactly 15 reviews
+    let finalReviews = allReviews
+
+    // Check if we have existing reviews in weekly cache first
+    const existingWeeklyCache = await redis.get<ResponseData>(WEEKLY_CACHE_KEY)
+    
+    if (existingWeeklyCache && existingWeeklyCache.reviews) {
+      console.log(`[Daily Sync] Found ${existingWeeklyCache.reviews.length} existing reviews in weekly cache`)
+      
+      // Merge existing and new reviews, removing duplicates
+      const existingReviews = existingWeeklyCache.reviews
+      const mergedReviews = [...existingReviews]
+      
+      // Add new reviews that don't already exist
+      for (const newReview of allReviews) {
+        const exists = existingReviews.some(existing => 
+          existing.time === newReview.time && existing.author_name === newReview.author_name
+        )
+        if (!exists) {
+          mergedReviews.push(newReview)
+        }
+      }
+      
+      // Sort by time (newest first)
+      const sortedReviews = mergedReviews.sort((a, b) => b.time - a.time)
+      
+      // If we have fewer than 15 unique reviews, duplicate to reach 15
+      if (sortedReviews.length < 15) {
+        finalReviews = [...sortedReviews]
+        while (finalReviews.length < 15) {
+          const remainingSlots = 15 - finalReviews.length
+          const reviewsToAdd = sortedReviews.slice(0, Math.min(remainingSlots, sortedReviews.length))
+          finalReviews = [...finalReviews, ...reviewsToAdd]
+        }
+        console.log(`[Daily Sync] Padded ${sortedReviews.length} unique reviews to ${finalReviews.length} total`)
+      } else {
+        // Take exactly 15 if we have more than 15
+        finalReviews = sortedReviews.slice(0, 15)
+        console.log(`[Daily Sync] Rolling cache: ${mergedReviews.length} total → ${finalReviews.length} kept (15 limit)`)
+      }
+    } else {
+      // No existing cache, pad with duplicates if needed to reach exactly 15
+      if (allReviews.length > 0) {
+        finalReviews = [...allReviews]
+        
+        // Duplicate reviews to reach exactly 15
+        while (finalReviews.length < 15) {
+          const remainingSlots = 15 - finalReviews.length
+          const reviewsToAdd = allReviews.slice(0, Math.min(remainingSlots, allReviews.length))
+          finalReviews = [...finalReviews, ...reviewsToAdd]
+        }
+        
+        // Ensure exactly 15 reviews
+        finalReviews = finalReviews.slice(0, 15)
+      }
+      console.log(`[Daily Sync] No existing cache, created initial set of ${finalReviews.length} reviews (from ${allReviews.length} originals)`)
+    }
+
     const responseData: ResponseData = {
-      reviews: allReviews,
+      reviews: finalReviews,
       rating: basicInfoData.result.rating || 0,
       user_ratings_total: basicInfoData.result.user_ratings_total || 0,
       cache_timestamp: new Date().toISOString(),
-      reviews_count: allReviews.length
+      reviews_count: finalReviews.length
     }
 
     // Store in Redis cache with expiration
     await redis.set(CACHE_KEY, responseData, {
       ex: CACHE_DURATION
+    })
+
+    // Also update the weekly cache with the new rolling data
+    await redis.set(WEEKLY_CACHE_KEY, responseData, {
+      ex: 7 * 24 * 60 * 60 // 7 days
     })
 
     // Get historical data if available

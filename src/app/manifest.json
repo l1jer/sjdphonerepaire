@@ -1,0 +1,25 @@
+{
+  "name": "SJD Tech Phone & Tablet Repairs",
+  "short_name": "SJD Tech",
+  "description": "Professional phone and tablet repair services in Ocean Grove, Geelong",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#a31d1d",
+  "icons": [
+    {
+      "src": "/sjd-phone-repair-logo.webp",
+      "sizes": "192x192",
+      "type": "image/webp"
+    },
+    {
+      "src": "/sjd-phone-repair-logo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ],
+  "categories": ["business", "utilities"],
+  "lang": "en-AU",
+  "dir": "ltr",
+  "orientation": "portrait-primary"
+}
