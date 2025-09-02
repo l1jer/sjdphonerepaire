@@ -39,7 +39,7 @@ interface ResponseData {
   historical_last_updated?: string
 }
 
-// Initialize Redis client
+// Initialize Redis client with provided credentials
 const redis = new Redis({
   url: process.env.reviews_KV_REST_API_URL || '',
   token: process.env.reviews_KV_REST_API_TOKEN || ''
@@ -59,6 +59,7 @@ redis
 const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_PLACES_API_KEY
 const PLACE_ID = 'ChIJncP4AAw51GoRHBRenZ9MLxg'
 const CACHE_KEY = 'google_reviews_cache'
+const WEEKLY_CACHE_KEY = 'reviews_weekly_cache'
 const CACHE_DURATION = 24 * 60 * 60 // 24 hours in seconds
 const HISTORICAL_CACHE_KEY = 'google_reviews_historical'
 
@@ -125,13 +126,23 @@ export async function GET () {
   }
 
   try {
-    console.log('Checking Redis cache...')
-    const cachedData = await redis.get(CACHE_KEY)
-    if (cachedData) {
-      console.log('Cache hit! Serving from Redis cache')
-      return NextResponse.json(cachedData)
+    // First, check weekly cache (primary source)
+    console.log('Checking weekly Redis cache...')
+    const weeklyCache = await redis.get(WEEKLY_CACHE_KEY)
+    if (weeklyCache) {
+      console.log('Weekly cache hit! Serving from weekly Redis cache')
+      return NextResponse.json(weeklyCache)
     }
-    console.log('Cache miss! Fetching from Google API...')
+    
+    // Fallback to daily cache
+    console.log('Weekly cache miss! Checking daily Redis cache...')
+    const dailyCache = await redis.get(CACHE_KEY)
+    if (dailyCache) {
+      console.log('Daily cache hit! Serving from daily Redis cache')
+      return NextResponse.json(dailyCache)
+    }
+    
+    console.log('No cache found! Fetching from Google API as fallback...')
 
     // 获取所有评论
     const allReviews = await getAllReviews(PLACE_ID, GOOGLE_PLACES_API_KEY)

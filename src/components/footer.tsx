@@ -4,25 +4,25 @@ export default function Footer() {
     const currentYear = new Date().getFullYear()
 
     return (
-        <footer className="w-full py-12 mt-16 bg-gradient-to-b from-transparent via-gray-50/50 to-gray-100/80 dark:via-gray-900/50 dark:to-gray-950/80 backdrop-blur-sm">
-            <div className="container mx-auto px-4">
+        <footer className="w-full py-8 sm:py-12 mt-12 sm:mt-16 bg-gradient-to-b from-transparent via-gray-50/50 to-gray-100/80 dark:via-gray-900/50 dark:to-gray-950/80 backdrop-blur-sm">
+            <div className="container mx-auto px-4 sm:px-6">
                 <div className="flex flex-col items-center justify-center">
                     {/* Logo & Links */}
-                    <div className="flex flex-col md:flex-row items-center justify-between w-full max-w-4xl mb-8">
+                    <div className="flex flex-col md:flex-row items-center justify-between w-full max-w-4xl mb-6 sm:mb-8">
                         <div className="flex items-center space-x-2 mb-4 md:mb-0">
-                            <span className="text-md text-primary">SJD Tech Phone & Tablet Repairs</span>
+                            <span className="text-sm sm:text-base text-primary font-medium">SJD Tech Phone & Tablet Repairs</span>
                         </div>
-                        <div className="flex items-center space-x-6">
-                            <Link href="#services" className="text-sm text-gray-600 hover:text-primary dark:text-gray-400 dark:hover:text-primary-400 transition-colors">
+                        <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
+                            <Link href="#services" className="text-xs sm:text-sm text-gray-600 hover:text-primary dark:text-gray-400 dark:hover:text-primary-400 transition-colors">
                                 Services
                             </Link>
-                            <Link href="#pricing" className="text-sm text-gray-600 hover:text-primary dark:text-gray-400 dark:hover:text-primary-400 transition-colors">
+                            <Link href="#pricing" className="text-xs sm:text-sm text-gray-600 hover:text-primary dark:text-gray-400 dark:hover:text-primary-400 transition-colors">
                                 Pricing
                             </Link>
-                            <Link href="#reviews" className="text-sm text-gray-600 hover:text-primary dark:text-gray-400 dark:hover:text-primary-400 transition-colors">
+                            <Link href="#reviews" className="text-xs sm:text-sm text-gray-600 hover:text-primary dark:text-gray-400 dark:hover:text-primary-400 transition-colors">
                                 Reviews
                             </Link>
-                            <Link href="#map" className="text-sm text-gray-600 hover:text-primary dark:text-gray-400 dark:hover:text-primary-400 transition-colors">
+                            <Link href="#map" className="text-xs sm:text-sm text-gray-600 hover:text-primary dark:text-gray-400 dark:hover:text-primary-400 transition-colors">
                                 Find Us
                             </Link>
                         </div>

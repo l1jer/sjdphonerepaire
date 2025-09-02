@@ -1,25 +1,25 @@
 export default function Map() {
   return (
-    <section id="map" className="relative bg-background-light dark:bg-background-dark py-24">
+    <section id="map" className="relative bg-background-light dark:bg-background-dark py-16 sm:py-20 md:py-24">
       {/* Decorative elements */}
       <div className="absolute inset-0 bg-gradient-to-b from-background-DEFAULT/20 to-transparent dark:from-background-darker/20" />
-      <div className="absolute right-0 top-20 h-64 w-64 rounded-full bg-brand/5 blur-3xl dark:bg-accent/5" />
-      <div className="absolute left-0 bottom-20 h-64 w-64 rounded-full bg-brand/5 blur-3xl dark:bg-accent/5" />
+      <div className="absolute right-0 top-20 h-32 w-32 sm:h-48 sm:w-48 md:h-64 md:w-64 rounded-full bg-brand/5 blur-3xl dark:bg-accent/5" />
+      <div className="absolute left-0 bottom-20 h-32 w-32 sm:h-48 sm:w-48 md:h-64 md:w-64 rounded-full bg-brand/5 blur-3xl dark:bg-accent/5" />
 
-      <div className="container relative mx-auto px-4">
-        <div className="mb-16 text-center">
-          <h2 className="mb-4 text-4xl font-bold text-brand dark:text-text-inverse">
+      <div className="container relative mx-auto px-4 sm:px-6">
+        <div className="mb-12 sm:mb-16 text-center">
+          <h2 className="mb-4 text-2xl sm:text-3xl md:text-4xl font-bold text-brand dark:text-text-inverse">
             Find Our Store
           </h2>
-          <p className="mx-auto max-w-2xl text-lg text-text-dark dark:text-text-inverse/80">
+          <p className="mx-auto max-w-2xl text-sm sm:text-base md:text-lg text-text-dark dark:text-text-inverse/80 leading-relaxed">
             Located in the heart of Ocean Grove, we&apos;re here to provide expert phone repair services when you need them.
           </p>
         </div>
 
-        <div className="relative rounded-3xl border border-neutral-200 bg-white shadow-lg dark:border-neutral-800 dark:bg-background-darker">
-          <div className="grid md:grid-cols-5 lg:grid-cols-7">
+        <div className="relative rounded-2xl sm:rounded-3xl border border-neutral-200 bg-white shadow-lg dark:border-neutral-800 dark:bg-background-darker">
+          <div className="grid grid-cols-1 md:grid-cols-5 lg:grid-cols-7">
             {/* Store Information */}
-            <div className="space-y-8 p-8 md:col-span-2 lg:col-span-3 lg:p-12">
+            <div className="space-y-6 sm:space-y-8 p-6 sm:p-8 md:col-span-2 lg:col-span-3 lg:p-12">
               {/* Location */}
               <div>
                 <div className="mb-4 flex items-center space-x-2">
@@ -32,7 +32,7 @@ export default function Map() {
                   <h3 className="text-lg font-semibold text-brand dark:text-text-inverse">Store Address</h3>
                 </div>
                 <div className="ml-10 space-y-2">
-                  <p className="text-lg text-text-dark dark:text-text-inverse/90">
+                  <p className="text-base sm:text-lg text-text-dark dark:text-text-inverse/90">
                     Tenancy 7C Kingston Village Shopping Centre
                     <br />
                     122-160 Grubb Road
@@ -57,16 +57,16 @@ export default function Map() {
                   <h3 className="text-lg font-semibold text-brand dark:text-text-inverse">Opening Hours</h3>
                 </div>
                 <div className="ml-10 space-y-1">
-                  <div className="flex justify-between text-lg text-text-dark dark:text-text-inverse/90">
-                    <span>Monday - Friday</span>
+                  <div className="flex justify-between text-base sm:text-lg text-text-dark dark:text-text-inverse/90">
+                    <span>MON - FRI</span>
                     <span className="font-medium">9:00 am - 5:30 pm</span>
                   </div>
-                  <div className="flex justify-between text-lg text-text-dark dark:text-text-inverse/90">
-                    <span>Saturday</span>
+                  <div className="flex justify-between text-base sm:text-lg text-text-dark dark:text-text-inverse/90">
+                    <span>SAT</span>
                     <span className="font-medium">9:00 am - 5:00 pm</span>
                   </div>
-                  <div className="flex justify-between text-lg text-brand/80 dark:text-accent/80">
-                    <span>Sunday</span>
+                  <div className="flex justify-between text-base sm:text-lg text-brand/80 dark:text-accent/80">
+                    <span>SUN</span>
                     <span>10:00 am - 4:00 pm</span>
                   </div>
                 </div>
@@ -85,11 +85,11 @@ export default function Map() {
                 </div>
                 <div className="ml-10 space-y-2">
                   <a href="tel:0410422772"
-                    className="block text-lg text-text-dark dark:text-text-inverse/90">
+                    className="block text-base sm:text-lg text-text-dark dark:text-text-inverse/90">
                     0410 422 772
                   </a>
                   <a href="mailto:sjdphonerepair@gmail.com"
-                    className="block text-lg text-text-dark dark:text-text-inverse/90">
+                    className="block text-base sm:text-lg text-text-dark dark:text-text-inverse/90">
                     sjdphonerepair@gmail.com
                   </a>
                 </div>

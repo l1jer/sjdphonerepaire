@@ -21,7 +21,7 @@ interface ReviewsData {
 }
 
 const CACHE_KEY = 'googleReviewsCache'
-const CACHE_DURATION = 24 * 60 * 60 * 1000 // 24 hours in milliseconds
+const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds (extended since we sync weekly)
 
 export default function Reviews() {
   const [data, setData] = useState<ReviewsData | null>(null)
@@ -49,12 +49,13 @@ export default function Reviews() {
           }
         }
 
-        // If cache is expired or doesn't exist, fetch new data
+        // If cache is expired or doesn't exist, fetch from API (which now serves from Redis)
+        console.log('Fetching fresh reviews from API (Redis-backed)...')
         const result = await fetchGoogleReviews()
         setData(result)
         setError(null)
         // Log fetched reviews
-        console.log('Fetched reviews from API:', JSON.stringify(result.reviews, null, 2))
+        console.log('Fetched reviews from Redis-backed API:', JSON.stringify(result.reviews, null, 2))
 
         // Update cache
         localStorage.setItem(CACHE_KEY, JSON.stringify(result))
@@ -70,29 +71,23 @@ export default function Reviews() {
     loadReviews()
   }, [])
 
-  // Function to create review columns with different starting points
+  // Function to create review columns for infinite scrolling
   const createColumns = useCallback((reviews: Review[]) => {
-    // Copy reviews array to avoid modifying original data
+    // Ensure we have enough reviews by duplicating if necessary
     let allReviews = [...reviews]
-
-    // If there aren't enough reviews, duplicate them to reach minimum length
-    while (allReviews.length < 6) {
+    while (allReviews.length < 15) { // Need at least 15 for 3 columns × 5 reviews
       allReviews = [...allReviews, ...reviews]
     }
 
-    // Create columns based on screen size
-    // For mobile (1 column): 3 reviews per column
-    // For tablet (2 columns): 3 reviews per column
-    // For desktop (3 columns): 3 reviews per column
-    const columnCount = 3 // Maximum number of columns
-    const reviewsPerColumn = 3
+    const columnCount = 3
+    const reviewsPerColumn = 5
 
     const columns = Array(columnCount).fill(null).map((_, columnIndex) => {
       const startIndex = columnIndex * reviewsPerColumn
       const columnReviews = allReviews.slice(startIndex, startIndex + reviewsPerColumn)
 
-      // Repeat these reviews 2 times to create scrolling effect
-      return Array(2).fill(columnReviews).flat()
+      // Create seamless infinite scroll by duplicating the column content
+      return [...columnReviews, ...columnReviews] // Double the content for seamless loop
     })
 
     return columns
@@ -109,13 +104,13 @@ export default function Reviews() {
     };
 
     return (
-      <div id="reviews" className="flex flex-col gap-4 rounded-lg border p-4">
-        <div className="flex items-center gap-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-medium text-primary-foreground">
+      <div id="reviews" className="flex flex-col gap-3 sm:gap-4 rounded-lg border p-3 sm:p-4">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-primary text-xs sm:text-sm font-medium text-primary-foreground">
             {getInitials(review.author_name)}
           </div>
-          <div className="ml-3">
-            <h3 className="text-sm font-medium text-brand dark:text-[rgb(254,249,225)]">
+          <div className="ml-2 sm:ml-3 flex-1 min-w-0">
+            <h3 className="text-xs sm:text-sm font-medium text-brand dark:text-[rgb(254,249,225)] truncate">
               {review.author_name}
             </h3>
             <div className="flex items-center">
@@ -123,7 +118,7 @@ export default function Reviews() {
                 {[...Array(5)].map((_, i) => (
                   <svg
                     key={i}
-                    className={`h-4 w-4 ${i < review.rating
+                    className={`h-3 w-3 sm:h-4 sm:w-4 ${i < review.rating
                       ? 'text-brand dark:text-[rgb(254,249,225)]'
                       : 'text-brand/20 dark:text-[rgb(254,249,225)]/20'
                       }`}
@@ -134,13 +129,13 @@ export default function Reviews() {
                   </svg>
                 ))}
               </div>
-              <span className="ml-2 text-xs text-brand/60 dark:text-[rgb(254,249,225)]/60">
+              <span className="ml-1 sm:ml-2 text-xs text-brand/60 dark:text-[rgb(254,249,225)]/60 truncate">
                 {review.relative_time_description}
               </span>
             </div>
           </div>
         </div>
-        <p className="text-sm text-brand/80 dark:text-[rgb(254,249,225)]/80">
+        <p className="text-xs sm:text-sm text-brand/80 dark:text-[rgb(254,249,225)]/80 leading-relaxed">
           {review.text}
         </p>
       </div>
@@ -174,21 +169,21 @@ export default function Reviews() {
   const columns = createColumns(data.reviews)
 
   return (
-    <section className="relative bg-background-light dark:bg-background-darker py-20">
+    <section className="relative bg-background-light dark:bg-background-darker py-16 sm:py-20">
       {/* Title Section with higher z-index */}
-      <div className="relative z-30 container mx-auto px-4 mb-16">
+      <div className="relative z-30 container mx-auto px-4 sm:px-6 mb-12 sm:mb-16">
         <div className="text-center">
-          <h2 className="text-5xl font-bold text-brand dark:text-[rgb(254,249,225)] mb-6">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-brand dark:text-[rgb(254,249,225)] mb-4 sm:mb-6">
             What Our Customers Say
           </h2>
-          <div className="flex items-center justify-center gap-2 text-xl text-brand-dark dark:text-[rgb(254,249,225)]">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-2 text-base sm:text-lg md:text-xl text-brand-dark dark:text-[rgb(254,249,225)]">
             <div className="flex items-center">
               <span className="font-medium">{data.rating.toFixed(1)}</span>
               <div className="flex ml-2">
                 {[...Array(5)].map((_, i) => (
                   <svg
                     key={i}
-                    className={`h-6 w-6 ${i < Math.round(data.rating)
+                    className={`h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 ${i < Math.round(data.rating)
                       ? 'text-brand dark:text-[rgb(254,249,225)]'
                       : 'text-brand/20 dark:text-[rgb(254,249,225)]/20'
                       }`}
@@ -200,32 +195,35 @@ export default function Reviews() {
                 ))}
               </div>
             </div>
-            <span className="mx-2 dark:text-[rgb(254,249,225)]/60">•</span>
-            <span>{data.user_ratings_total} reviews</span>
+            <span className="mx-2 dark:text-[rgb(254,249,225)]/60 hidden sm:inline">•</span>
+            <span className="text-sm sm:text-base md:text-lg">{data.user_ratings_total} reviews</span>
           </div>
         </div>
       </div>
 
       {/* Reviews Section */}
-      <div className="relative overflow-hidden h-[600px]">
-        {/* Gradient overlays */}
-        <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-background-light dark:from-background-darker to-transparent z-20" />
-        <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-background-light dark:from-background-darker to-transparent z-20" />
+      <div className="relative overflow-hidden h-[400px] sm:h-[500px] md:h-[600px] reviews-container">
+        {/* Gradient overlays for smooth fade effect */}
+        <div className="absolute inset-x-0 top-0 h-16 sm:h-24 md:h-32 bg-gradient-to-b from-background-light dark:from-background-darker to-transparent z-20" />
+        <div className="absolute inset-x-0 bottom-0 h-16 sm:h-24 md:h-32 bg-gradient-to-t from-background-light dark:from-background-darker to-transparent z-20" />
 
         {/* Reviews grid */}
-        <div className="relative z-10 container mx-auto px-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
+        <div className="relative z-10 container mx-auto px-4 sm:px-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-7xl mx-auto">
             {columns.map((column, columnIndex) => (
               <div
                 key={columnIndex}
-                className="space-y-6 animate-scroll"
+                className="animate-scroll"
                 style={{
-                  animation: `scroll${columnIndex % 2 === 0 ? 'Down' : 'Up'} ${40 + columnIndex * 5}s linear infinite`,
-                  animationDelay: `${columnIndex * -8}s`
+                  animation: `scroll${columnIndex % 2 === 0 ? 'Down' : 'Up'} ${60 + columnIndex * 10}s linear infinite`,
+                  animationDelay: `${columnIndex * -20}s`
                 }}
               >
                 {column.map((review, reviewIndex) => (
-                  <ReviewCard key={`${review.time}_${reviewIndex}`} review={review} />
+                  <ReviewCard 
+                    key={`${columnIndex}_${review.time}_${reviewIndex}`} 
+                    review={review} 
+                  />
                 ))}
               </div>
             ))}
