@@ -109,7 +109,7 @@ export default function Reviews() {
     };
 
     return (
-      <div className="flex flex-col gap-4 rounded-lg border p-4">
+      <div id="reviews" className="flex flex-col gap-4 rounded-lg border p-4">
         <div className="flex items-center gap-4">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-medium text-primary-foreground">
             {getInitials(review.author_name)}

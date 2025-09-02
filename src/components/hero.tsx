@@ -8,16 +8,16 @@ export default function Hero() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div className="text-left space-y-8">
               <h1 className="text-6xl font-bold tracking-tight text-brand dark:text-text-inverse md:text-7xl lg:text-8xl">
-                Expert Phone Repair
-                <span className="block mt-4 text-text-dark dark:text-accent">When You Need It</span>
+              Don’t panic, 
+                <span className="block mt-4 text-text-dark dark:text-accent">we can fast fit your mobile phone and tablet repairs.</span>
               </h1>
 
               <div className="flex flex-col sm:flex-row gap-6">
                 <Link
-                  href="#contact"
+                  href="tel:0410422772"
                   className="rounded-full bg-brand px-10 py-4 text-xl font-medium text-background-light hover:bg-brand-light transition-colors dark:bg-accent dark:hover:bg-accent-light text-center"
                 >
-                  Contact Us
+                  Call Us: 0410 422 772
                 </Link>
                 <Link
                   href="#pricing"
@@ -30,7 +30,7 @@ export default function Hero() {
 
             <div className="text-left space-y-6">
               <p className="text-lg text-brand dark:text-text-inverse/90 md:text-2xl leading-relaxed">
-                SJD Tech is a skilled team specialising in mobile phone and accessory repairs. We pride ourselves on using high-quality components and offering services at the most competitive prices.
+                SJD Tech is a skilled team specialising in mobile phone and tablet repairs. We pride ourselves on using high-quality components and offering services at the most competitive prices.
               </p>
 
               <p className="text-lg text-brand dark:text-text-inverse/90 md:text-2xl leading-relaxed">

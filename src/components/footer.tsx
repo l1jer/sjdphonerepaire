@@ -10,8 +10,7 @@ export default function Footer() {
                     {/* Logo & Links */}
                     <div className="flex flex-col md:flex-row items-center justify-between w-full max-w-4xl mb-8">
                         <div className="flex items-center space-x-2 mb-4 md:mb-0">
-                            <span className="text-xl font-bold text-primary">SJD</span>
-                            <span className="text-lg font-medium">Phone Repair</span>
+                            <span className="text-md text-primary">SJD Tech Phone & Tablet Repairs</span>
                         </div>
                         <div className="flex items-center space-x-6">
                             <Link href="#services" className="text-sm text-gray-600 hover:text-primary dark:text-gray-400 dark:hover:text-primary-400 transition-colors">
@@ -20,8 +19,11 @@ export default function Footer() {
                             <Link href="#pricing" className="text-sm text-gray-600 hover:text-primary dark:text-gray-400 dark:hover:text-primary-400 transition-colors">
                                 Pricing
                             </Link>
-                            <Link href="#contact" className="text-sm text-gray-600 hover:text-primary dark:text-gray-400 dark:hover:text-primary-400 transition-colors">
-                                Contact
+                            <Link href="#reviews" className="text-sm text-gray-600 hover:text-primary dark:text-gray-400 dark:hover:text-primary-400 transition-colors">
+                                Reviews
+                            </Link>
+                            <Link href="#map" className="text-sm text-gray-600 hover:text-primary dark:text-gray-400 dark:hover:text-primary-400 transition-colors">
+                                Find Us
                             </Link>
                         </div>
                     </div>
@@ -34,14 +36,14 @@ export default function Footer() {
                         <p className="text-sm text-gray-600 dark:text-gray-400">
                             Crafted by{' '}
                             <Link
-                                href="https://jerryli.me/df-studio"
+                                href="https://digolas-forge.com/"
                                 className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors font-medium"
                             >
-                                DF Studio
+                                Digolas Forge
                             </Link>
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-500">
-                            © {currentYear} SJD Phone Repair. All rights reserved.
+                            © {currentYear} SJD Tech Phone & Tablet Repairs. All rights reserved.
                         </p>
                     </div>
                 </div>

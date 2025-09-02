@@ -10,8 +10,8 @@ import ScrollToTop from '@/components/ScrollToTop'
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "SJD Phone Repair",
-  description: "Professional phone repair services in Sydney",
+  title: "SJD Tech Phone & Tablet Repairs",
+  description: "Professional phone & tablet repair services in Sydney",
 };
 
 export default function RootLayout({

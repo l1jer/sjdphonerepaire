@@ -8,9 +8,6 @@ export default function Map() {
 
       <div className="container relative mx-auto px-4">
         <div className="mb-16 text-center">
-          <span className="mb-4 inline-block rounded-full bg-brand/10 px-4 py-2 text-sm font-medium text-brand dark:bg-accent/10 dark:text-accent">
-            Visit Us
-          </span>
           <h2 className="mb-4 text-4xl font-bold text-brand dark:text-text-inverse">
             Find Our Store
           </h2>
@@ -70,7 +67,7 @@ export default function Map() {
                   </div>
                   <div className="flex justify-between text-lg text-brand/80 dark:text-accent/80">
                     <span>Sunday</span>
-                    <span>Closed</span>
+                    <span>10:00 am - 4:00 pm</span>
                   </div>
                 </div>
               </div>
@@ -103,7 +100,7 @@ export default function Map() {
             <div className="md:col-span-3 lg:col-span-4">
               <div className="h-full min-h-[400px] w-full">
                 <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3143.0171880638164!2d144.51863167677566!3d-38.26177997256694!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x6ad4162a72322c25%3A0xf04567605318210!2sKingston%20Village%20Shopping%20Centre!5e0!3m2!1sen!2sau!4v1708561547959!5m2!1sen!2sau"
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3133.4359963740035!2d144.53720061095186!3d-38.24619295344965!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x6ad4390c00f8c39d%3A0x182f4c9f9d5e141c!2sSJD%20Tech%20Phone%20%26%20Tablet%20Repairs!5e0!3m2!1sen!2sau!4v1756817594224!5m2!1sen!2sau"
                   width="100%"
                   height="100%"
                   style={{ border: 0 }}

@@ -3,7 +3,6 @@ import Hero from "../components/hero"
 import Pricing from "../components/pricing"
 import Reviews from "../components/reviews"
 import Map from "../components/map"
-import Contact from "../components/contact"
 
 export default function Home() {
   return (
@@ -13,7 +12,6 @@ export default function Home() {
       <Pricing />
       <Reviews />
       <Map />
-      <Contact />
     </main>
   )
 }

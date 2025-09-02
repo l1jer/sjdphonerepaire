@@ -2,30 +2,33 @@ import Link from "next/link"
 
 const repairs = [
   {
-    device: "iPhone",
+    device: "Phone Repair",
     services: [
-      { name: "Screen Replacement", price: "89" },
-      { name: "Battery Replacement", price: "69" },
-      { name: "Charging Port", price: "59" },
-      { name: "Back Glass", price: "79" },
+      { name: "LCD Screen", price: "from $55" },
+      { name: "Battery Repair", price: "from $55" },
+      { name: "Back Camera", price: "from $60" },
+      { name: "Camera Lens", price: "from $50" },
+      { name: "Front Camera", price: "from $55" },
+      { name: "Charging Port", price: "from $80" },
+      { name: "Water Damaged", price: "from $50" },
+      { name: "Loud Speaker", price: "from $70" },
+      { name: "Back Cover", price: "from $60" },
+      { name: "Other Repairs", price: "from $70" },
     ],
   },
   {
-    device: "Samsung",
+    device: "iPad & Tablet Repair",
     services: [
-      { name: "Screen Replacement", price: "99" },
-      { name: "Battery Replacement", price: "79" },
-      { name: "Charging Port", price: "69" },
-      { name: "Back Glass", price: "89" },
-    ],
-  },
-  {
-    device: "Other Brands",
-    services: [
-      { name: "Screen Replacement", price: "from 79" },
-      { name: "Battery Replacement", price: "from 59" },
-      { name: "Charging Port", price: "from 49" },
-      { name: "Back Glass", price: "from 69" },
+      { name: "LCD Replacement", price: "from $150" },
+      { name: "Touch Glass", price: "from $90" },
+      { name: "Back Camera", price: "from $140" },
+      { name: "Front Camera", price: "from $140" },
+      { name: "Camera Lens", price: "from $60" },
+      { name: "Charging Port", price: "from $150" },
+      { name: "Battery Repair", price: "from $120" },
+      { name: "Loud Speaker", price: "from $100" },
+      { name: "Home Button", price: "from $90" },
+      { name: "Other Repairs", price: "from $70" },
     ],
   },
 ]
@@ -39,11 +42,11 @@ export default function Pricing() {
             Transparent Pricing
           </h2>
           <p className="mx-auto max-w-2xl text-text-dark dark:text-text-inverse/80">
-            All repairs come with a 90-day warranty and our satisfaction guarantee. Contact us for a detailed quote for your specific model.
+            All repairs come with a 90-day warranty and our satisfaction guarantee. Call us for a detailed quote for your specific model.
           </p>
         </div>
 
-        <div className="grid gap-8 md:grid-cols-3">
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-2">
           {repairs.map((category) => (
             <div
               key={category.device}
@@ -52,37 +55,35 @@ export default function Pricing() {
               <h3 className="mb-6 text-2xl font-bold text-brand dark:text-text-inverse">
                 {category.device}
               </h3>
-              <div className="space-y-4">
+              <div className="grid gap-3 sm:grid-cols-1">
                 {category.services.map((service) => (
                   <div
                     key={service.name}
-                    className="flex items-center justify-between border-b border-neutral-200 pb-4 last:border-0 dark:border-neutral-700"
+                    className="flex items-center justify-between rounded-lg bg-neutral-50 px-4 py-3 transition-colors hover:bg-neutral-100 dark:bg-neutral-800/50 dark:hover:bg-neutral-800"
                   >
-                    <span className="text-text-dark dark:text-text-inverse/90">{service.name}</span>
-                    <span className="font-medium text-brand dark:text-accent">${service.price}</span>
+                    <span className="text-sm font-medium text-text-dark dark:text-text-inverse/90">{service.name}</span>
+                    <span className="text-sm font-bold text-brand dark:text-accent">{service.price}</span>
                   </div>
                 ))}
               </div>
               <Link
-                href="#contact"
+                href="tel:0410422772"
                 className="mt-8 block rounded-full bg-brand px-6 py-3 text-center font-medium text-white transition-colors hover:bg-brand-light dark:bg-accent dark:hover:bg-accent-light"
               >
-                Book Repair
+                Call Us Now
               </Link>
             </div>
           ))}
         </div>
 
+        <Link href="tel:0410422772">
         <div className="mt-16 rounded-2xl bg-white/50 p-8 text-center shadow-lg transition-all hover:shadow-xl dark:bg-background-darker/50">
           <p className="text-lg text-text-dark dark:text-text-inverse">
-            Need a repair not listed here?{" "}
-            <Link href="#contact" className="font-medium text-brand transition-colors hover:text-brand-light dark:text-accent dark:hover:text-accent-light">
-              Contact us
-            </Link>{" "}
-            for a custom quote.
+            Need a repair not listed here? Call us for a custom quote.
           </p>
         </div>
-      </div>
+        </Link>
+        </div>
     </section>
   )
 }
