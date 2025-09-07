@@ -66,7 +66,7 @@ export async function storeFormData(caseId: string, data: RepairFormData, signat
     // Store in Redis with 24-hour expiration
     await redis.set(`${FORM_DATA_PREFIX}${caseId}`, JSON.stringify(formData), { ex: 24 * 60 * 60 })
 
-    console.log(`Form data stored in Redis for case: ${caseId}`)
+    // console.log(`Form data stored in Redis for case: ${caseId}`)
     return true
   } catch (error) {
     console.error('Error storing form data in Redis:', error)

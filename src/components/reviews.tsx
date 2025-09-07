@@ -44,18 +44,18 @@ export default function Reviews() {
             setError(null)
             setLoading(false)
             // Log cached reviews
-            console.log('Loaded reviews from cache:', JSON.stringify(parsedData.reviews, null, 2))
+            // console.log('Loaded reviews from cache:', JSON.stringify(parsedData.reviews, null, 2))
             return
           }
         }
 
         // If cache is expired or doesn't exist, fetch from API (which now serves from Redis)
-        console.log('Fetching fresh reviews from API (Redis-backed)...')
+        // console.log('Fetching fresh reviews from API (Redis-backed)...')
         const result = await fetchGoogleReviews()
         setData(result)
         setError(null)
         // Log fetched reviews
-        console.log('Fetched reviews from Redis-backed API:', JSON.stringify(result.reviews, null, 2))
+        // console.log('Fetched reviews from Redis-backed API:', JSON.stringify(result.reviews, null, 2))
 
         // Update cache
         localStorage.setItem(CACHE_KEY, JSON.stringify(result))

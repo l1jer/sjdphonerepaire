@@ -51,28 +51,26 @@ function generateCaseId(data: RepairFormData): string {
   return `${dateStr}-${cleanPhone}-${fullName}`
 }
 
-
 // Log form data to console (simple alternative to external databases)
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function logFormData(_data: RepairFormData, _caseId: string): boolean {
+function logFormData(data: RepairFormData, caseId: string): boolean {
   try {
-    // console.log('\n=== REPAIR FORM SUBMISSION ===')
-    // console.log(`Case ID: ${_caseId}`)
-    // console.log(`Timestamp: ${new Date().toISOString()}`)
-    // console.log('\n--- CUSTOMER INFORMATION ---')
-    // console.log(`Name: ${_data.customerName}`)
-    // console.log(`Phone: ${_data.phoneNumber}`)
-    // console.log(`Email: ${_data.email}`)
-    // console.log(`Drop-off Date: ${_data.dropOffDate}`)
-    // console.log(`Pick-up Date: ${_data.pickUpDate}`)
-    // console.log('\n--- DEVICE INFORMATION ---')
-    // console.log(`Type: ${_data.deviceType}`)
-    // console.log(`Brand: ${_data.deviceBrand}`)
-    // console.log(`Model: ${_data.deviceModel}`)
-    // console.log(`Serial: ${_data.serialNumber}`)
-    // console.log(`IMEI: ${_data.imeiNumber}`)
-    // console.log(`Condition: ${_data.deviceCondition}`)
-    // console.log('\n=== END SUBMISSION ===\n')
+    console.log('\n=== REPAIR FORM SUBMISSION ===')
+    console.log(`Case ID: ${caseId}`)
+    console.log(`Timestamp: ${new Date().toISOString()}`)
+    console.log('\n--- CUSTOMER INFORMATION ---')
+    console.log(`Name: ${data.customerName}`)
+    console.log(`Phone: ${data.phoneNumber}`)
+    console.log(`Email: ${data.email}`)
+    console.log(`Drop-off Date: ${data.dropOffDate}`)
+    console.log(`Pick-up Date: ${data.pickUpDate}`)
+    console.log('\n--- DEVICE INFORMATION ---')
+    console.log(`Type: ${data.deviceType}`)
+    console.log(`Brand: ${data.deviceBrand}`)
+    console.log(`Model: ${data.deviceModel}`)
+    console.log(`Serial: ${data.serialNumber}`)
+    console.log(`IMEI: ${data.imeiNumber}`)
+    console.log(`Condition: ${data.deviceCondition}`)
+    console.log('\n=== END SUBMISSION ===\n')
 
     return true
   } catch (error) {
@@ -146,7 +144,7 @@ export async function POST(request: NextRequest) {
     const caseId = generateCaseId(data)
 
     const totalStartTime = Date.now()
-    // console.log(`Processing repair form submission: ${caseId}`)
+    console.log(`Processing repair form submission: ${caseId}`)
 
     // Handle device photos if uploaded
     const devicePhotos: File[] = []
@@ -154,7 +152,7 @@ export async function POST(request: NextRequest) {
       const photo = formData.get(`devicePhoto${i}`) as File
       if (photo && photo.size > 0) {
         devicePhotos.push(photo)
-        // console.log(`Device photo ${i + 1} uploaded: ${photo.name} (${photo.size} bytes)`)
+        console.log(`Device photo ${i + 1} uploaded: ${photo.name} (${photo.size} bytes)`)
       } else {
         break
       }
@@ -167,10 +165,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Also return form data in response for immediate download
-    // console.log(`Processing ${devicePhotos.length} photos...`)
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const photoPromises = devicePhotos.map(async (photo, _index) => {
-      // console.log(`Processing photo ${_index + 1}: ${photo.name} (${photo.size} bytes)`)
+    console.log(`Processing ${devicePhotos.length} photos...`)
+    const photoPromises = devicePhotos.map(async (photo, index) => {
+      console.log(`Processing photo ${index + 1}: ${photo.name} (${photo.size} bytes)`)
       return {
         name: photo.name,
         size: photo.size,
@@ -181,7 +178,7 @@ export async function POST(request: NextRequest) {
     })
 
     const processedPhotos = await Promise.all(photoPromises)
-    // console.log(`Photo processing completed for ${processedPhotos.length} photos`)
+    console.log(`Photo processing completed for ${processedPhotos.length} photos`)
 
     const formDataForDownload = {
       data,
@@ -193,12 +190,11 @@ export async function POST(request: NextRequest) {
     const dataLogged = logFormData(data, caseId)
 
     // Generate PDF with images and signature
-    // console.log('Starting PDF generation...')
+    console.log('Starting PDF generation...')
     const startTime = Date.now()
     const pdfBuffer = await generatePDF(data, caseId, data.signature, devicePhotos)
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const _pdfGenerationTime = Date.now() - startTime
-    // console.log(`PDF generation completed in ${_pdfGenerationTime}ms. Size: ${pdfBuffer.length} bytes`)
+    const pdfGenerationTime = Date.now() - startTime
+    console.log(`PDF generation completed in ${pdfGenerationTime}ms. Size: ${pdfBuffer.length} bytes`)
 
     // Send customer email (no PDF attachment)
     const customerEmailSent = await sendCustomerEmail(data, caseId)
@@ -213,10 +209,9 @@ export async function POST(request: NextRequest) {
     // const pdfUploadedSuccess = await uploadPDFToDrive(pdfBuffer, referenceNumber, data.customerName)
     const pdfUploadedSuccess = false // Disabled for now
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const _totalTime = Date.now() - totalStartTime
-    // console.log(`Total processing time: ${_totalTime}ms`)
-    // console.log('Sending response to client...')
+    const totalTime = Date.now() - totalStartTime
+    console.log(`Total processing time: ${totalTime}ms`)
+    console.log('Sending response to client...')
     return NextResponse.json({
       success: true,
       caseId,

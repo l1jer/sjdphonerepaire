@@ -43,32 +43,32 @@ export default function RepairFormPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [password, setPassword] = useState('')
   const [formData, setFormData] = useState<FormData>({
-    customerName: 'John Smith',
-    phoneNumber: '0412345678',
-    email: 'john.smith@example.com',
-    dropOffDate: new Date().toISOString().split('T')[0],
-    pickUpDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Default to 1 week later
-    deviceType: 'iPhone',
-    deviceModel: 'iPhone 15 Pro',
-    deviceBrand: 'Apple',
-    serialNumber: 'F2L987654321',
-    imeiNumber: '351234567890123',
-    deviceCondition: 'Water damaged',
+    customerName: '',
+    phoneNumber: '',
+    email: '',
+    dropOffDate: '',
+    pickUpDate: '',
+    deviceType: '',
+    deviceModel: '',
+    deviceBrand: '',
+    serialNumber: '',
+    imeiNumber: '',
+    deviceCondition: '',
     customCondition: '',
     functionCheck: {
-            mic: true,
-            earpieceSpeaker: true,
-            sensor: false,
-            frontCamera: true,
-            backCamera: true,
-            rotation: true,
-            signal: true,
-            lcdGlass: false,
-            charging: true,
-            volumeButton: true,
-            muteButton: true,
-            faceId: true
-          }
+      mic: false,
+      earpieceSpeaker: false,
+      sensor: false,
+      frontCamera: false,
+      backCamera: false,
+      rotation: false,
+      signal: false,
+      lcdGlass: false,
+      charging: false,
+      volumeButton: false,
+      muteButton: false,
+      faceId: false
+    }
   })
   
   const [signature, setSignature] = useState<string>('')
@@ -357,15 +357,15 @@ export default function RepairFormPage() {
       })
 
       // Submit to API
-      console.log('Submitting form to API...')
+      // console.log('Submitting form to API...')
       const response = await fetch('/api/repair-form/submit', {
         method: 'POST',
         body: submissionData
       })
 
-      console.log('API response status:', response.status)
+      // console.log('API response status:', response.status)
       const result = await response.json()
-      console.log('API response:', result)
+      // console.log('API response:', result)
 
       if (response.ok) {
         setSubmitStatus({
@@ -557,6 +557,7 @@ export default function RepairFormPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     value={formData.customerName}
                     onChange={(e) => handleInputChange('customerName', e.target.value)}
+                    placeholder="Enter full name"
                   />
                 </div>
                 <div>
@@ -569,6 +570,7 @@ export default function RepairFormPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     value={formData.phoneNumber}
                     onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
+                    placeholder="e.g., 0412 345 678"
                   />
                 </div>
                 <div>
@@ -580,6 +582,7 @@ export default function RepairFormPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
+                    placeholder="customer@example.com"
                   />
                 </div>
                 <div>
@@ -668,6 +671,7 @@ export default function RepairFormPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     value={formData.serialNumber}
                     onChange={(e) => handleInputChange('serialNumber', e.target.value)}
+                    placeholder="e.g., F2L987654321"
                   />
                 </div>
                 <div>
@@ -679,6 +683,7 @@ export default function RepairFormPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     value={formData.imeiNumber}
                     onChange={(e) => handleInputChange('imeiNumber', e.target.value)}
+                    placeholder="e.g., 351234567890123"
                   />
                 </div>
                 <div>

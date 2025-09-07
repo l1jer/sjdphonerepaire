@@ -45,11 +45,11 @@ export async function sendCustomerEmail(data: RepairFormData, caseId: string): P
   try {
     // Check if email configuration is available
     if (!EMAIL_CONFIG.USER || !EMAIL_CONFIG.PASS || !data.email) {
-      console.log('Customer email configuration not available, skipping customer email')
+      // console.log('Customer email configuration not available, skipping customer email')
       return false
     }
 
-    console.log('Sending customer notification email...')
+    // console.log('Sending customer notification email...')
 
     // Create transporter
     const transporter = nodemailer.createTransport({
@@ -128,9 +128,10 @@ export async function sendCustomerEmail(data: RepairFormData, caseId: string): P
     }
 
     // Send customer email
-    const customerInfo = await transporter.sendMail(customerMailOptions)
-    console.log('✅ Customer email sent successfully!')
-    console.log(`📧 Customer Message ID: ${customerInfo.messageId}`)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _customerInfo = await transporter.sendMail(customerMailOptions)
+    // console.log('✅ Customer email sent successfully!')
+    // console.log(`📧 Customer Message ID: ${_customerInfo.messageId}`)
 
     return true
   } catch (error) {
@@ -144,11 +145,11 @@ export async function sendInternalEmail(pdfBuffer: Buffer, data: RepairFormData,
   try {
     // Check if email configuration is available
     if (!EMAIL_CONFIG.USER || !EMAIL_CONFIG.PASS) {
-      console.log('Internal email configuration not available, skipping internal email')
+      // console.log('Internal email configuration not available, skipping internal email')
       return false
     }
 
-    console.log('Sending internal notification email...')
+    // console.log('Sending internal notification email...')
 
     // Create transporter
     const transporter = nodemailer.createTransport({
@@ -257,7 +258,7 @@ export async function sendInternalEmail(pdfBuffer: Buffer, data: RepairFormData,
     }
 
     // Send internal email with increased timeout for large attachments
-    console.log('Sending internal email with PDF attachment...')
+    // console.log('Sending internal email with PDF attachment...')
     try {
       const emailPromise = transporter.sendMail(internalMailOptions)
       const timeoutPromise = new Promise((_, reject) =>
@@ -265,7 +266,7 @@ export async function sendInternalEmail(pdfBuffer: Buffer, data: RepairFormData,
       )
 
       await Promise.race([emailPromise, timeoutPromise])
-      console.log('✅ Internal email sent successfully!')
+      // console.log('✅ Internal email sent successfully!')
 
       return true
     } catch (emailError) {
