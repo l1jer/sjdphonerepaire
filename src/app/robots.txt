@@ -3,7 +3,7 @@ Allow: /
 Disallow: /api/
 Disallow: /admin/
 
-Sitemap: https://sjdphonerepaire.vercel.app/sitemap.xml
+Sitemap: https://www.sjdtech.com.au/sitemap.xml
 
 # Specific bot instructions
 User-agent: Googlebot

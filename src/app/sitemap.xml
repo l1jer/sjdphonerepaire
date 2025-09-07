@@ -8,17 +8,17 @@
 
   <!-- Main page -->
   <url>
-    <loc>https://sjdphonerepaire.vercel.app/</loc>
+    <loc>https://www.sjdtech.com.au/</loc>
     <lastmod>2025-01-01T00:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <image:image>
-      <image:loc>https://sjdphonerepaire.vercel.app/hero-image.jpg</image:loc>
+      <image:loc>https://www.sjdtech.com.au/hero-image.jpg</image:loc>
       <image:title>Professional Phone Repair Services</image:title>
       <image:caption>Expert technician repairing mobile phone with precision tools</image:caption>
     </image:image>
     <image:image>
-      <image:loc>https://sjdphonerepaire.vercel.app/sjd-phone-repair-logo.webp</image:loc>
+      <image:loc>https://www.sjdtech.com.au/sjd-phone-repair-logo.webp</image:loc>
       <image:title>SJD Tech Phone & Tablet Repairs Logo</image:title>
       <image:caption>Official logo of SJD Tech repair services</image:caption>
     </image:image>
@@ -26,28 +26,28 @@
 
   <!-- Section anchors for better indexing -->
   <url>
-    <loc>https://sjdphonerepaire.vercel.app/#about</loc>
+    <loc>https://www.sjdtech.com.au/#about</loc>
     <lastmod>2025-01-01T00:00:00+00:00</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
-    <loc>https://sjdphonerepaire.vercel.app/#pricing</loc>
+    <loc>https://www.sjdtech.com.au/#pricing</loc>
     <lastmod>2025-01-01T00:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
 
   <url>
-    <loc>https://sjdphonerepaire.vercel.app/#reviews</loc>
+    <loc>https://www.sjdtech.com.au/#reviews</loc>
     <lastmod>2025-01-01T00:00:00+00:00</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
 
   <url>
-    <loc>https://sjdphonerepaire.vercel.app/#map</loc>
+    <loc>https://www.sjdtech.com.au/#map</loc>
     <lastmod>2025-01-01T00:00:00+00:00</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>

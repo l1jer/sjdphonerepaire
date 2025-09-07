@@ -21,14 +21,14 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL('https://sjdphonerepaire.vercel.app'),
+  metadataBase: new URL('https://www.sjdtech.com.au'),
   alternates: {
     canonical: '/',
   },
   openGraph: {
     title: "SJD Tech Phone & Tablet Repairs | Professional Mobile Repair Ocean Grove",
     description: "Expert phone and tablet repair services in Ocean Grove, Geelong. Fast, reliable repairs for iPhone, Samsung, iPad with 90-day warranty. Screen, battery, camera repairs from $50.",
-    url: 'https://sjdphonerepaire.vercel.app',
+    url: 'https://www.sjdtech.com.au',
     siteName: 'SJD Tech Phone & Tablet Repairs',
     images: [
       {
@@ -72,7 +72,7 @@ export default function RootLayout({
     <html lang="en-AU" suppressHydrationWarning className="scroll-smooth">
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <link rel="canonical" href="https://sjdphonerepaire.vercel.app/" />
+        <link rel="canonical" href="https://www.sjdtech.com.au/" />
         <meta name="geo.region" content="AU-VIC" />
         <meta name="geo.placename" content="Ocean Grove" />
         <meta name="geo.position" content="-38.2508;144.5225" />
@@ -83,11 +83,11 @@ export default function RootLayout({
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "LocalBusiness",
-              "@id": "https://sjdphonerepaire.vercel.app/#business",
+              "@id": "https://www.sjdtech.com.au/#business",
               "name": "SJD Tech Phone & Tablet Repairs",
               "alternateName": "SJD Tech",
               "description": "Professional phone and tablet repair services in Ocean Grove, Geelong. Expert repairs for iPhone, Samsung, iPad with 90-day warranty.",
-              "url": "https://sjdphonerepaire.vercel.app",
+              "url": "https://www.sjdtech.com.au",
               "telephone": "+61410422772",
               "email": "sjdphonerepair@gmail.com",
               "address": {
@@ -118,8 +118,8 @@ export default function RootLayout({
                 "geoRadius": "50000"
               },
               "priceRange": "$50-$200",
-              "image": "https://sjdphonerepaire.vercel.app/hero-image.jpg",
-              "logo": "https://sjdphonerepaire.vercel.app/sjd-phone-repair-logo.webp",
+              "image": "https://www.sjdtech.com.au/hero-image.jpg",
+              "logo": "https://www.sjdtech.com.au/sjd-phone-repair-logo.webp",
               "sameAs": [],
               "hasOfferCatalog": {
                 "@type": "OfferCatalog",
