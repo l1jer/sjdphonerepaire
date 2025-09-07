@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { useEffect, useState } from "react"
 
 export default function Header() {
@@ -20,14 +21,13 @@ export default function Header() {
       <div className="container mx-auto flex h-16 sm:h-20 items-center justify-between px-4 sm:px-6">
         <Link href="/" className="flex items-center space-x-2">
           {/* Company logo, bigger on mobile */}
-          <img
+          <Image
             src="/sjd-phone-repair-logo.webp"
             alt="SJD Tech Phone & Tablet Repairs - Professional mobile repair services in Ocean Grove, Geelong"
             className="h-16 w-16 sm:h-16 sm:w-16 md:h-20 md:w-20 object-contain"
-            loading="lazy"
-            decoding="async"
-            width="80"
-            height="80"
+            width={80}
+            height={80}
+            priority={false}
           />
         </Link>
 

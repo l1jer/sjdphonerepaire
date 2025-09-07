@@ -1,4 +1,5 @@
 import Link from "next/link"
+import Image from "next/image"
 
 export default function Hero() {
   return (
@@ -8,14 +9,13 @@ export default function Hero() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-16 items-center">
             {/* Mobile: Image first, Desktop: Text first */}
             <div className="relative order-1 lg:order-2">
-              <img
+              <Image
                 src="/hero-image.jpg"
                 alt="Expert phone repair technician at SJD Tech carefully repairing iPhone screen with professional tools in Ocean Grove workshop"
                 className="w-full h-auto rounded-2xl shadow-2xl object-cover"
-                loading="eager"
-                decoding="async"
-                width="600"
-                height="400"
+                width={600}
+                height={400}
+                priority={true}
               />
             </div>
 

@@ -1,0 +1,283 @@
+import { NextRequest, NextResponse } from 'next/server'
+import jsPDF from 'jspdf'
+import { getStoredFormData } from '@/lib/formDataStore'
+
+// Copy the modern PDF generation function from submit route
+async function generatePDF(data: Record<string, unknown>, referenceNumber: string, signature?: string, devicePhotos: File[] = []): Promise<Buffer> {
+  // Cast to specific type since we know the structure from the form
+  const formData = data as {
+    customerName?: string
+    phoneNumber?: string
+    email?: string
+    deviceType?: string
+    deviceBrand?: string
+    deviceModel?: string
+    serialNumber?: string
+    imeiNumber?: string
+    issueDescription?: string
+    repairType?: string
+    estimatedCost?: string
+    urgency?: string
+    accessories?: string
+    deviceCondition?: string
+    previousRepairs?: string
+    warrantyStatus?: string
+    technicianName?: string
+    receiptDate?: string
+    estimatedCompletion?: string
+    internalNotes?: string
+  }
+  const doc = new jsPDF()
+
+  // Modern color scheme
+  const primaryColor: [number, number, number] = [41, 128, 185] // Blue
+  const secondaryColor: [number, number, number] = [52, 73, 94] // Dark gray
+
+  let yPosition = 20
+
+  // Header with modern design
+  doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2])
+  doc.rect(0, 0, 210, 30, 'F')
+
+  doc.setTextColor(255, 255, 255)
+  doc.setFontSize(24)
+  doc.setFont('helvetica', 'bold')
+  doc.text('SJD TECH', 20, 20)
+
+  doc.setFontSize(14)
+  doc.setFont('helvetica', 'normal')
+  doc.text('Device Repair Form', 20, 26)
+
+  // Reference and date in white box
+  doc.setFillColor(255, 255, 255)
+  doc.rect(140, 10, 50, 15, 'F')
+  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2])
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'bold')
+  doc.text(`Ref: ${referenceNumber}`, 145, 17)
+  doc.text(`Date: ${new Date().toLocaleDateString()}`, 145, 22)
+
+  yPosition = 45
+
+  // Section header function
+  const addSection = (title: string) => {
+    doc.setFillColor(secondaryColor[0], secondaryColor[1], secondaryColor[2])
+    doc.rect(0, yPosition - 5, 210, 8, 'F')
+    doc.setTextColor(255, 255, 255)
+    doc.setFontSize(12)
+    doc.setFont('helvetica', 'bold')
+    doc.text(title, 20, yPosition)
+    yPosition += 15
+    doc.setTextColor(0, 0, 0)
+  }
+
+  // Field function
+  const addField = (label: string, value: string) => {
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'bold')
+    doc.text(`${label}:`, 20, yPosition)
+
+    doc.setFont('helvetica', 'normal')
+    const lines = doc.splitTextToSize(value || 'N/A', 120)
+    doc.text(lines, 60, yPosition)
+    yPosition += Math.max(8, lines.length * 5)
+  }
+
+  // Customer Information Section
+  addSection('CUSTOMER INFORMATION')
+  addField('Full Name', formData.customerName || '')
+  addField('Phone Number', formData.phoneNumber || '')
+  addField('Email Address', formData.email || '')
+  yPosition += 5
+
+  // Device Information Section
+  addSection('DEVICE INFORMATION')
+  addField('Device Type', formData.deviceType || '')
+  addField('Brand', formData.deviceBrand || '')
+  addField('Model', formData.deviceModel || '')
+  addField('Serial Number', formData.serialNumber || '')
+  addField('IMEI Number', formData.imeiNumber || '')
+  yPosition += 5
+
+  // Repair Details Section
+  addSection('REPAIR DETAILS')
+  addField('Issue Description', formData.issueDescription || '')
+  addField('Repair Type', formData.repairType || '')
+  addField('Estimated Cost', formData.estimatedCost || '')
+  addField('Urgency Level', formData.urgency || '')
+  addField('Device Condition', formData.deviceCondition || '')
+  addField('Included Accessories', formData.accessories || '')
+  yPosition += 5
+
+  // Internal Information Section
+  addSection('INTERNAL INFORMATION')
+  addField('Technician', formData.technicianName || '')
+  addField('Receipt Date', formData.receiptDate || '')
+  addField('Estimated Completion', formData.estimatedCompletion || '')
+  if (formData.internalNotes) {
+    addField('Internal Notes', formData.internalNotes)
+  }
+  yPosition += 10
+
+  // Images section
+  if (devicePhotos && devicePhotos.length > 0) {
+    addSection('DEVICE PHOTOS')
+
+    for (let i = 0; i < devicePhotos.length; i++) {
+      if (yPosition > 250) { // New page if needed
+        doc.addPage()
+        yPosition = 20
+      }
+
+      const photo = devicePhotos[i]
+      if (photo && photo.name) {
+        doc.setFontSize(10)
+        doc.setFont('helvetica', 'normal')
+        doc.text(`Photo ${i + 1}: ${photo.name}`, 20, yPosition)
+        doc.text(`Size: ${(photo.size / 1024 / 1024).toFixed(2)} MB`, 20, yPosition + 5)
+        yPosition += 8
+
+        // Add a placeholder rectangle for the image
+        doc.setDrawColor(200, 200, 200)
+        doc.setFillColor(245, 245, 245)
+        doc.rect(20, yPosition, 60, 40, 'FD')
+        doc.setFontSize(8)
+        doc.setTextColor(128, 128, 128)
+        doc.text('[Image Placeholder]', 30, yPosition + 25)
+        doc.setTextColor(0, 0, 0)
+        yPosition += 50
+      }
+    }
+    yPosition += 10
+  }
+
+  // Signature section
+  if (signature) {
+    if (yPosition > 220) {
+      doc.addPage()
+      yPosition = 20
+    }
+
+    addSection('CUSTOMER SIGNATURE')
+
+    // Add signature placeholder
+    doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2])
+    doc.setLineWidth(1)
+    doc.rect(20, yPosition, 120, 40, 'S')
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'normal')
+    doc.text('Customer Signature:', 25, yPosition + 35)
+    doc.text('[Digital signature captured and verified]', 25, yPosition + 45)
+
+    yPosition += 60
+  }
+
+  // Footer
+  const pageHeight = doc.internal.pageSize.height
+  doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2])
+  doc.rect(0, pageHeight - 20, 210, 20, 'F')
+  doc.setTextColor(255, 255, 255)
+  doc.setFontSize(8)
+  doc.setFont('helvetica', 'normal')
+  doc.text('SJD Tech - Professional Device Repair Services', 20, pageHeight - 10)
+  doc.text(`Generated on ${new Date().toLocaleString()}`, 20, pageHeight - 5)
+
+  return Buffer.from(doc.output('arraybuffer'))
+}
+
+// GET method - Try to get data from Redis first, then fall back to error
+export async function GET(request: NextRequest, { params }: { params: Promise<{ reference: string }> }) {
+  try {
+    const { reference: referenceNumber } = await params
+
+    // Try to get stored form data from Redis
+    const storedData = await getStoredFormData(referenceNumber)
+
+    if (!storedData) {
+      return NextResponse.json(
+        { error: 'Form data not found or expired. Please resubmit the form.' },
+        { status: 404 }
+      )
+    }
+
+    // Generate PDF with actual form data, signature, and images
+    const pdfBuffer = await generatePDF(
+      storedData.data as unknown as Record<string, unknown>,
+      referenceNumber,
+      storedData.signature,
+      storedData.devicePhotos
+    )
+
+    // Return PDF as downloadable file
+    return new NextResponse(new Uint8Array(pdfBuffer), {
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="repair-form-${referenceNumber}-${(storedData.data as { customerName?: string }).customerName?.replace(/\s+/g, '_') || 'customer'}.pdf"`,
+        'Cache-Control': 'no-cache',
+      },
+    })
+
+  } catch (error) {
+    console.error('Error generating PDF download:', error)
+    return NextResponse.json(
+      { error: 'Failed to generate PDF download' },
+      { status: 500 }
+    )
+  }
+}
+
+// POST method - Accept form data directly from the frontend
+export async function POST(request: NextRequest, { params }: { params: Promise<{ reference: string }> }) {
+  try {
+    const { reference: referenceNumber } = await params
+
+    // Get form data from request body
+    const requestBody = await request.json()
+    const { formData } = requestBody
+
+    if (!formData || !formData.data) {
+      return NextResponse.json(
+        { error: 'Form data not provided in request body' },
+        { status: 400 }
+      )
+    }
+
+    // Convert base64 photos back to File objects
+    const devicePhotos = formData.devicePhotos?.map((photoData: {
+      name: string
+      size: number
+      type: string
+      content: string
+    }) => {
+      const buffer = Buffer.from(photoData.content, 'base64')
+      return new File([buffer], photoData.name, {
+        type: photoData.type,
+        lastModified: Date.now()
+      })
+    }) || []
+
+    // Generate PDF with form data, signature, and images
+    const pdfBuffer = await generatePDF(
+      formData.data,
+      referenceNumber,
+      formData.signature,
+      devicePhotos
+    )
+
+    // Return PDF as downloadable file
+    return new NextResponse(new Uint8Array(pdfBuffer), {
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="repair-form-${referenceNumber}-${formData.data.customerName?.replace(/\s+/g, '_') || 'customer'}.pdf"`,
+        'Cache-Control': 'no-cache',
+      },
+    })
+
+  } catch (error) {
+    console.error('Error generating PDF download:', error)
+    return NextResponse.json(
+      { error: 'Failed to generate PDF download' },
+      { status: 500 }
+    )
+  }
+}
