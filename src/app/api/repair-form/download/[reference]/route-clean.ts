@@ -5,10 +5,10 @@ import { getStoredFormData } from '@/lib/formDataStore'
 // GET method - Try to get data from Redis first, then fall back to error
 export async function GET(request: NextRequest, { params }: { params: Promise<{ reference: string }> }) {
   try {
-    const { reference: caseId } = await params
+    const { reference: storedCaseId } = await params
 
     // Try to get stored form data from Redis
-    const storedData = await getStoredFormData(caseId)
+    const storedData = await getStoredFormData(storedCaseId)
 
     if (!storedData) {
       return NextResponse.json(
@@ -18,25 +18,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     // Generate entry ID from stored data
-    const generateCaseIdFromData = (data: { customerName?: string; phoneNumber?: string }): string => {
-      const date = new Date()
-      const day = String(date.getDate()).padStart(2, '0')
-      const month = String(date.getMonth() + 1).padStart(2, '0')
-      const year = date.getFullYear()
-      const dateStr = `${day}${month}${year}`
-
-      const cleanPhone = data.phoneNumber?.replace(/[\s\-\(\)]/g, '') || ''
-      const fullName = `${data.customerName || ''}`.toUpperCase().replace(/\s+/g, '')
-
-      return `${dateStr}-${cleanPhone}-${fullName}`
-    }
-
-    const caseId = generateCaseIdFromData(storedData.data)
 
     // Generate PDF with actual form data, signature, and images
     const pdfBuffer = await generatePDF(
       storedData.data,
-      caseId,
+      storedCaseId,
       storedData.signature,
       storedData.devicePhotos
     )
@@ -45,7 +31,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="repair-form-${caseId}-${(storedData.data as { customerName?: string }).customerName?.replace(/\s+/g, '_') || 'customer'}.pdf"`,
+        'Content-Disposition': `attachment; filename="repair-form-${storedCaseId}-${(storedData.data as { customerName?: string }).customerName?.replace(/\s+/g, '_') || 'customer'}.pdf"`,
         'Cache-Control': 'no-cache',
       },
     })
@@ -62,7 +48,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 // POST method - Accept form data directly from the frontend
 export async function POST(request: NextRequest, { params }: { params: Promise<{ reference: string }> }) {
   try {
-    const { reference: caseId } = await params
+    const { reference: requestCaseId } = await params
 
     // Get form data from request body
     const requestBody = await request.json()
@@ -89,26 +75,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       })
     }) || []
 
-    // Generate entry ID from form data
-    const generateCaseIdFromData = (data: { customerName?: string; phoneNumber?: string }): string => {
-      const date = new Date()
-      const day = String(date.getDate()).padStart(2, '0')
-      const month = String(date.getMonth() + 1).padStart(2, '0')
-      const year = date.getFullYear()
-      const dateStr = `${day}${month}${year}`
-
-      const cleanPhone = data.phoneNumber?.replace(/[\s\-\(\)]/g, '') || ''
-      const fullName = `${data.customerName || ''}`.toUpperCase().replace(/\s+/g, '')
-
-      return `${dateStr}-${cleanPhone}-${fullName}`
-    }
-
-    const caseId = generateCaseIdFromData(formData.data)
-
     // Generate PDF with form data, signature, and images
     const pdfBuffer = await generatePDF(
       formData.data,
-      caseId,
+      requestCaseId,
       formData.signature,
       devicePhotos
     )
@@ -117,7 +87,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="repair-form-${caseId}-${formData.data.customerName?.replace(/\s+/g, '_') || 'customer'}.pdf"`,
+        'Content-Disposition': `attachment; filename="repair-form-${requestCaseId}-${formData.data.customerName?.replace(/\s+/g, '_') || 'customer'}.pdf"`,
         'Cache-Control': 'no-cache',
       },
     })
