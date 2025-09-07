@@ -180,7 +180,7 @@ export default function RepairFormPage() {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()
     // Use environment variable or default password for internal use
-    const adminPassword = process.env.NEXT_PUBLIC_ADMIN_FORM_PASSWORD || 'SJD2024Repair'
+    const adminPassword = process.env.ADMIN_FORM
     if (password === adminPassword) {
       setIsAuthenticated(true)
     } else {
