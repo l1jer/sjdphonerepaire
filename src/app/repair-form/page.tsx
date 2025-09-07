@@ -177,14 +177,28 @@ export default function RepairFormPage() {
   }, [cameraStream])
 
   // Simple authentication for internal use
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Use environment variable or default password for internal use
-    const adminPassword = process.env.ADMIN_FORM
-    if (password === adminPassword) {
-      setIsAuthenticated(true)
-    } else {
-      alert('Invalid password. Please contact your administrator.')
+
+    try {
+      const response = await fetch('/api/admin/auth', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password }),
+      })
+
+      const result = await response.json()
+
+      if (response.ok && result.success) {
+        setIsAuthenticated(true)
+      } else {
+        alert(result.message || 'Invalid password. Please contact your administrator.')
+      }
+    } catch (error) {
+      console.error('Authentication error:', error)
+      alert('Authentication failed. Please try again.')
     }
   }
 
