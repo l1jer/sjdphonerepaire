@@ -13,16 +13,16 @@ export default function Footer() {
                             <span className="text-sm sm:text-base text-primary font-medium">SJD Tech Phone & Tablet Repairs</span>
                         </div>
                         <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
-                            <Link href="#about" className="text-xs sm:text-sm text-gray-600 hover:text-primary dark:text-gray-400 dark:hover:text-primary-400 transition-colors">
+                            <Link href="/#about" className="text-xs sm:text-sm text-gray-600 hover:text-primary dark:text-gray-400 dark:hover:text-primary-400 transition-colors">
                                 About
                             </Link>
-                            <Link href="#pricing" className="text-xs sm:text-sm text-gray-600 hover:text-primary dark:text-gray-400 dark:hover:text-primary-400 transition-colors">
+                            <Link href="/#pricing" className="text-xs sm:text-sm text-gray-600 hover:text-primary dark:text-gray-400 dark:hover:text-primary-400 transition-colors">
                                 Pricing
                             </Link>
-                            <Link href="#reviews" className="text-xs sm:text-sm text-gray-600 hover:text-primary dark:text-gray-400 dark:hover:text-primary-400 transition-colors">
+                            <Link href="/#reviews" className="text-xs sm:text-sm text-gray-600 hover:text-primary dark:text-gray-400 dark:hover:text-primary-400 transition-colors">
                                 Reviews
                             </Link>
-                            <Link href="#map" className="text-xs sm:text-sm text-gray-600 hover:text-primary dark:text-gray-400 dark:hover:text-primary-400 transition-colors">
+                            <Link href="/#map" className="text-xs sm:text-sm text-gray-600 hover:text-primary dark:text-gray-400 dark:hover:text-primary-400 transition-colors">
                                 Find Us
                             </Link>
                         </div>
