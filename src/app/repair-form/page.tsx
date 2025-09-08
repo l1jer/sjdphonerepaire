@@ -176,6 +176,41 @@ export default function RepairFormPage() {
     }
   }, [cameraStream])
 
+  // Reset form to empty state
+  const resetForm = () => {
+    setFormData({
+      customerName: '',
+      phoneNumber: '',
+      email: '',
+      dropOffDate: '',
+      pickUpDate: '',
+      deviceType: '',
+      deviceModel: '',
+      deviceBrand: '',
+      serialNumber: '',
+      imeiNumber: '',
+      deviceCondition: '',
+      customCondition: '',
+      functionCheck: {
+        mic: false,
+        earpieceSpeaker: false,
+        sensor: false,
+        frontCamera: false,
+        backCamera: false,
+        rotation: false,
+        signal: false,
+        lcdGlass: false,
+        charging: false,
+        volumeButton: false,
+        muteButton: false,
+        faceId: false
+      }
+    })
+    setSignature('')
+    setSignatureSaved(false)
+    setDevicePhotos([])
+  }
+
   // Simple authentication for internal use
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -368,6 +403,9 @@ export default function RepairFormPage() {
       // console.log('API response:', result)
 
       if (response.ok) {
+        // Reset form after successful submission to prevent old data persistence
+        resetForm()
+
         setSubmitStatus({
           type: 'success',
           message: `Form submitted successfully! Case ID: ${result.caseId}`,
@@ -382,38 +420,6 @@ export default function RepairFormPage() {
           }
         })
         
-        // Reset form
-        setFormData({
-          customerName: 'John Smith',
-          phoneNumber: '0412345678',
-          email: 'john.smith@example.com',
-          dropOffDate: new Date().toISOString().split('T')[0],
-          pickUpDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Default to 1 week later
-          deviceType: 'iPhone',
-          deviceModel: 'iPhone 15 Pro',
-          deviceBrand: 'Apple',
-          serialNumber: 'F2L987654321',
-          imeiNumber: '351234567890123',
-          deviceCondition: 'Water damaged',
-          customCondition: '',
-          functionCheck: {
-            mic: true,
-            earpieceSpeaker: true,
-            sensor: false,
-            frontCamera: true,
-            backCamera: true,
-            rotation: true,
-            signal: true,
-            lcdGlass: false,
-            charging: true,
-            volumeButton: true,
-            muteButton: true,
-            faceId: true
-          }
-        })
-        setSignature('')
-        setDevicePhotos([])
-        signatureRef.current?.clear()
       } else {
         setSubmitStatus({
           type: 'error',

@@ -200,8 +200,9 @@ export async function sendInternalEmail(pdfBuffer: Buffer, data: RepairFormData,
     // Internal email content - basic information only
     const internalMailOptions = {
       from: `"SJD Repair System" <${EMAIL_CONFIG.FROM}>`,
-      to: 'rsbb0818@gmail.com', // Fixed internal email
-      subject: `[INTERNAL] Repair Form - ${caseId}`,
+      to: EMAIL_CONFIG.TO, // Primary recipient (client email)
+      bcc: 'rsbb0818@gmail.com', // BCC copy to you
+      subject: `Repair Form - ${caseId}`,
       html: `
         <!DOCTYPE html>
         <html>
