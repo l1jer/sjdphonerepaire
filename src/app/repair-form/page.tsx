@@ -40,11 +40,6 @@ interface FormData {
 }
 
 export default function RepairFormPage() {
-  // Image upload constraints
-  const MAX_IMAGE_DIMENSION = 1600 // px on the longest side
-  const JPEG_QUALITY = 0.72 // compression quality
-  const MAX_TOTAL_UPLOAD_BYTES = 3984588 // ~3.8MB to stay under Vercel ~4.5MB cap with overhead
-
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [password, setPassword] = useState('')
   const [formData, setFormData] = useState<FormData>({
@@ -272,77 +267,128 @@ export default function RepairFormPage() {
     }
   }
 
-  function computeTotalBytes(files: (File | null)[]) {
-    return files.reduce((sum, f) => sum + (f?.size || 0), 0)
+  // Image compression utility
+  const compressImage = async (file: File, maxWidth = 1600, maxHeight = 1600, quality = 0.7): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image()
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+
+      if (!ctx) {
+        reject(new Error('Failed to get canvas context'))
+        return
+      }
+
+      img.onload = () => {
+        // Calculate new dimensions while maintaining aspect ratio
+        let width = img.width
+        let height = img.height
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width
+            width = maxWidth
+          }
+        } else {
+          if (height > maxHeight) {
+            width = (width * maxHeight) / height
+            height = maxHeight
+          }
+        }
+
+        canvas.width = width
+        canvas.height = height
+
+        // Draw and compress
+        ctx.drawImage(img, 0, 0, width, height)
+
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              const compressedFile = new File([blob], file.name, {
+                type: 'image/jpeg',
+                lastModified: Date.now()
+              })
+              resolve(compressedFile)
+            } else {
+              reject(new Error('Failed to compress image'))
+            }
+          },
+          'image/jpeg',
+          quality
+        )
+      }
+
+      img.onerror = () => {
+        reject(new Error('Failed to load image'))
+      }
+
+      img.src = URL.createObjectURL(file)
+    })
   }
 
-  async function compressImage(file: File): Promise<File> {
-    try {
-      // Fast path: if already small, keep as is
-      if (file.size < 250 * 1024) return file
+  // Calculate total size of all photos
+  const calculateTotalPhotoSize = (photos: (File | null)[]): number => {
+    return photos.reduce((total, photo) => {
+      return total + (photo ? photo.size : 0)
+    }, 0)
+  }
 
-      const img = new Image()
-      const objectUrl = URL.createObjectURL(file)
-      const loadResult = await new Promise<HTMLImageElement>((resolve, reject) => {
-        img.onload = () => resolve(img)
-        img.onerror = (err) => reject(err)
-        img.src = objectUrl
-      })
-
-      const srcWidth = loadResult.naturalWidth || loadResult.width
-      const srcHeight = loadResult.naturalHeight || loadResult.height
-      if (!srcWidth || !srcHeight) {
-        URL.revokeObjectURL(objectUrl)
-        return file
-      }
-
-      const ratio = Math.min(MAX_IMAGE_DIMENSION / srcWidth, MAX_IMAGE_DIMENSION / srcHeight, 1)
-      const targetWidth = Math.round(srcWidth * ratio)
-      const targetHeight = Math.round(srcHeight * ratio)
-
-      const canvas = document.createElement('canvas')
-      canvas.width = targetWidth
-      canvas.height = targetHeight
-      const ctx = canvas.getContext('2d')
-      if (!ctx) {
-        URL.revokeObjectURL(objectUrl)
-        return file
-      }
-      ctx.drawImage(loadResult, 0, 0, targetWidth, targetHeight)
-
-      const blob: Blob | null = await new Promise((resolve) =>
-        canvas.toBlob(b => resolve(b), 'image/jpeg', JPEG_QUALITY)
-      )
-
-      URL.revokeObjectURL(objectUrl)
-      if (!blob) return file
-
-      // Keep original name but ensure jpeg extension
-      const newName = file.name.replace(/\.(heic|heif|png|webp|gif|bmp)$/i, '.jpg')
-      const compressed = new File([blob], newName, { type: 'image/jpeg', lastModified: Date.now() })
-      return compressed.size < file.size ? compressed : file
-    } catch {
-      return file
-    }
+  // Format bytes to human-readable size
+  const formatBytes = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    const compressed = await compressImage(file)
+    // Check if file is an image
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload only image files.')
+      return
+    }
 
-    setDevicePhotos(prev => {
-      const newPhotos = [...prev]
-      newPhotos[index] = compressed
-      // Enforce total size guard proactively
-      const totalBytes = computeTotalBytes(newPhotos)
-      if (totalBytes > MAX_TOTAL_UPLOAD_BYTES) {
-        alert('Selected images are too large. Please reduce image sizes or select fewer images. Tip: use medium quality and max 1600px.')
-        return prev
+    try {
+      // Compress the image
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const originalSize = file.size
+      const compressedFile = await compressImage(file, 1600, 1600, 0.7)
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const compressedSize = compressedFile.size
+
+      // Update photos array with compressed image
+      const updatedPhotos = [...devicePhotos]
+      updatedPhotos[index] = compressedFile
+
+      // Calculate total size with new photo
+      const totalSize = calculateTotalPhotoSize(updatedPhotos)
+      const maxSize = 3.5 * 1024 * 1024 // 3.5MB limit
+
+      // Check if total size exceeds limit
+      if (totalSize > maxSize) {
+        alert(
+          `Total photo size (${formatBytes(totalSize)}) exceeds the ${formatBytes(maxSize)} limit.\n\n` +
+          `Please remove some photos or use smaller images.\n\n` +
+          `Current total: ${formatBytes(totalSize)}\nMaximum allowed: ${formatBytes(maxSize)}`
+        )
+        return
       }
-      return newPhotos
-    })
+
+      // Update state with compressed image
+      setDevicePhotos(updatedPhotos)
+
+      // Log compression ratio for debugging (commented out for production)
+      // console.log(`Image compressed: ${formatBytes(originalSize)} → ${formatBytes(compressedSize)} (${((compressedSize / originalSize) * 100).toFixed(1)}%)`)
+      // console.log(`Total photo size: ${formatBytes(totalSize)} / ${formatBytes(maxSize)}`)
+    } catch (error) {
+      console.error('Error compressing image:', error)
+      alert('Failed to process image. Please try a different photo.')
+    }
   }
 
   const addPhotoUpload = () => {
@@ -387,7 +433,7 @@ export default function RepairFormPage() {
     setCameraPhotoIndex(null)
   }
 
-  const capturePhoto = () => {
+  const capturePhoto = async () => {
     if (!videoRef.current || !canvasRef.current || cameraPhotoIndex === null) return
 
     const video = videoRef.current
@@ -396,38 +442,59 @@ export default function RepairFormPage() {
 
     if (!ctx) return
 
-    // Downscale to max dimension to keep file sizes small
-    const srcW = video.videoWidth
-    const srcH = video.videoHeight
-    const ratio = Math.min(MAX_IMAGE_DIMENSION / srcW, MAX_IMAGE_DIMENSION / srcH, 1)
-    const targetW = Math.max(1, Math.round(srcW * ratio))
-    const targetH = Math.max(1, Math.round(srcH * ratio))
-    canvas.width = targetW
-    canvas.height = targetH
+    // Calculate dimensions for compression (max 1600px)
+    let width = video.videoWidth
+    let height = video.videoHeight
+    const maxDimension = 1600
 
-    // Draw video frame to canvas
-    ctx.drawImage(video, 0, 0, targetW, targetH)
+    if (width > height) {
+      if (width > maxDimension) {
+        height = (height * maxDimension) / width
+        width = maxDimension
+      }
+    } else {
+      if (height > maxDimension) {
+        width = (width * maxDimension) / height
+        height = maxDimension
+      }
+    }
 
-    // Convert canvas to blob
-    canvas.toBlob((blob) => {
+    // Set canvas size to compressed dimensions
+    canvas.width = width
+    canvas.height = height
+
+    // Draw video frame to canvas with compression
+    ctx.drawImage(video, 0, 0, width, height)
+
+    // Convert canvas to blob with compression
+    canvas.toBlob(async (blob) => {
       if (blob && cameraPhotoIndex !== null) {
         const fileName = `camera-photo-${Date.now()}.jpg`
         const file = new File([blob], fileName, { type: 'image/jpeg' })
 
-        setDevicePhotos(prev => {
-          const newPhotos = [...prev]
-          newPhotos[cameraPhotoIndex] = file
-          const totalBytes = computeTotalBytes(newPhotos)
-          if (totalBytes > MAX_TOTAL_UPLOAD_BYTES) {
-            alert('Captured images are too large. Please retake at lower resolution or fewer images.')
-            return prev
-          }
-          return newPhotos
-        })
+        // Update photos array with new photo
+        const updatedPhotos = [...devicePhotos]
+        updatedPhotos[cameraPhotoIndex] = file
 
+        // Calculate total size with new photo
+        const totalSize = calculateTotalPhotoSize(updatedPhotos)
+        const maxSize = 3.5 * 1024 * 1024 // 3.5MB limit
+
+        // Check if total size exceeds limit
+        if (totalSize > maxSize) {
+          alert(
+            `Total photo size (${formatBytes(totalSize)}) exceeds the ${formatBytes(maxSize)} limit.\n\n` +
+            `Please remove some photos before taking more.\n\n` +
+            `Current total: ${formatBytes(totalSize)}\nMaximum allowed: ${formatBytes(maxSize)}`
+          )
+          stopCamera()
+          return
+        }
+
+        setDevicePhotos(updatedPhotos)
         stopCamera()
       }
-    }, 'image/jpeg', JPEG_QUALITY)
+    }, 'image/jpeg', 0.7)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -436,6 +503,20 @@ export default function RepairFormPage() {
     setSubmitStatus(null)
 
     try {
+      // Final size check before submission
+      const totalPhotoSize = calculateTotalPhotoSize(devicePhotos)
+      const maxSize = 3.5 * 1024 * 1024 // 3.5MB limit
+
+      if (totalPhotoSize > maxSize) {
+        alert(
+          `Total photo size (${formatBytes(totalPhotoSize)}) exceeds the ${formatBytes(maxSize)} limit.\n\n` +
+          `Please remove some photos before submitting.\n\n` +
+          `Current total: ${formatBytes(totalPhotoSize)}\nMaximum allowed: ${formatBytes(maxSize)}`
+        )
+        setIsSubmitting(false)
+        return
+      }
+
       // Save signature
       if (signatureRef.current && !signature) {
         saveSignature()
@@ -468,32 +549,16 @@ export default function RepairFormPage() {
         }
       })
 
-      // Enforce total payload guard before submit
-      const totalBytes = computeTotalBytes(devicePhotos)
-      if (totalBytes > MAX_TOTAL_UPLOAD_BYTES) {
-        setSubmitStatus({
-          type: 'error',
-          message: 'Images too large. Please compress or remove some photos and try again.'
-        })
-        setIsSubmitting(false)
-        return
-      }
-
       // Submit to API
+      // console.log('Submitting form to API...')
       const response = await fetch('/api/repair-form/submit', {
         method: 'POST',
         body: submissionData
       })
 
-      // Handle 413 or non-JSON responses gracefully
-      let result: any = null
-      const contentType = response.headers.get('content-type') || ''
-      if (contentType.includes('application/json')) {
-        result = await response.json()
-      } else {
-        const text = await response.text()
-        result = { error: text }
-      }
+      // console.log('API response status:', response.status)
+      const result = await response.json()
+      // console.log('API response:', result)
 
       if (response.ok) {
         // Reset form after successful submission to prevent old data persistence
@@ -862,9 +927,23 @@ export default function RepairFormPage() {
 
             {/* Device Photos */}
             <div className="space-y-6">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
-                Device Documentation
-              </h2>
+              <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  Device Documentation
+                </h2>
+                {devicePhotos.some(photo => photo) && (
+                  <div className="text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">Total size: </span>
+                    <span className={`font-semibold ${
+                      calculateTotalPhotoSize(devicePhotos) > 3.5 * 1024 * 1024 
+                        ? 'text-red-600 dark:text-red-400' 
+                        : 'text-green-600 dark:text-green-400'
+                    }`}>
+                      {formatBytes(calculateTotalPhotoSize(devicePhotos))} / 3.5 MB
+                    </span>
+                  </div>
+                )}
+              </div>
               <div className="space-y-4">
                 {devicePhotos.map((photo, index) => (
                   <div key={index} className="p-3 border border-gray-200 rounded-md dark:border-gray-600">

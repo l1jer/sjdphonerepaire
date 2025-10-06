@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { generatePDF } from '@/services/pdfService'
 import { sendCustomerEmail, sendInternalEmail } from '@/services/emailService'
 
+// Increase function timeout to 60 seconds for large attachments
+export const maxDuration = 60
+
 interface RepairFormData {
   customerName: string
   phoneNumber: string
@@ -33,9 +36,6 @@ interface RepairFormData {
 }
 
 import { storeFormData } from '@/lib/formDataStore'
-
-// Increase function timeout budget for large PDF/email flows
-export const maxDuration = 60
 
 // Generate case ID in format: DDMMYYYY-PHONENUMBER-FULLNAME
 function generateCaseId(data: RepairFormData): string {
