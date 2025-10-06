@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import SignatureCanvas from 'react-signature-canvas'
+import { Html5Qrcode } from 'html5-qrcode'
 
 interface FormData {
   // Customer Information
@@ -83,6 +84,12 @@ export default function RepairFormPage() {
   const [cameraPhotoIndex, setCameraPhotoIndex] = useState<number | null>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  // Barcode scanner functionality
+  const [isScannerActive, setIsScannerActive] = useState<boolean>(false)
+  const [scannerField, setScannerField] = useState<'serialNumber' | 'imeiNumber' | null>(null)
+  const scannerRef = useRef<Html5Qrcode | null>(null)
+  const scannerDivRef = useRef<HTMLDivElement>(null)
   const [submitStatus, setSubmitStatus] = useState<{
     type: 'success' | 'error',
     message: string,
@@ -175,6 +182,17 @@ export default function RepairFormPage() {
       }
     }
   }, [cameraStream])
+
+  // Cleanup scanner on unmount
+  useEffect(() => {
+    return () => {
+      if (scannerRef.current && isScannerActive) {
+        scannerRef.current.stop().catch((err) => {
+          console.error('Error stopping scanner on unmount:', err)
+        })
+      }
+    }
+  }, [isScannerActive])
 
   // Reset form to empty state
   const resetForm = () => {
@@ -495,6 +513,75 @@ export default function RepairFormPage() {
         stopCamera()
       }
     }, 'image/jpeg', 0.7)
+  }
+
+  // Barcode scanner functions
+  const startScanner = async (field: 'serialNumber' | 'imeiNumber') => {
+    try {
+      setScannerField(field)
+      setIsScannerActive(true)
+
+      // Wait for the DOM to be ready
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      if (!scannerDivRef.current) {
+        throw new Error('Scanner container not found')
+      }
+
+      // Create scanner instance
+      const scanner = new Html5Qrcode('barcode-scanner')
+      scannerRef.current = scanner
+
+      // Start scanning with back camera
+      await scanner.start(
+        { facingMode: 'environment' }, // Use back camera
+        {
+          fps: 10, // Frames per second
+          qrbox: { width: 250, height: 250 }, // Scanning box size
+          aspectRatio: 1.0
+        },
+        (decodedText) => {
+          // Success callback - barcode/QR code detected
+          handleScanSuccess(decodedText, field)
+        },
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        (_errorMessage) => {
+          // Error callback - scanning failed (this fires continuously, so we ignore it)
+        }
+      )
+    } catch (error) {
+      console.error('Error starting scanner:', error)
+      alert('Unable to access camera for scanning. Please check camera permissions and try again.')
+      stopScanner()
+    }
+  }
+
+  const stopScanner = async () => {
+    if (scannerRef.current) {
+      try {
+        await scannerRef.current.stop()
+        scannerRef.current.clear()
+        scannerRef.current = null
+      } catch (error) {
+        console.error('Error stopping scanner:', error)
+      }
+    }
+    setIsScannerActive(false)
+    setScannerField(null)
+  }
+
+  const handleScanSuccess = (decodedText: string, field: 'serialNumber' | 'imeiNumber') => {
+    // Clean the scanned text (remove whitespace)
+    const cleanedText = decodedText.trim()
+    
+    // Update the form field
+    handleInputChange(field, cleanedText)
+    
+    // Stop the scanner
+    stopScanner()
+    
+    // Show success message
+    alert(`${field === 'serialNumber' ? 'Serial Number' : 'IMEI Number'} scanned successfully: ${cleanedText}`)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -830,25 +917,45 @@ export default function RepairFormPage() {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Serial Number
                   </label>
-                  <input
-                    type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    value={formData.serialNumber}
-                    onChange={(e) => handleInputChange('serialNumber', e.target.value)}
-                    placeholder="e.g., F2L987654321"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      value={formData.serialNumber}
+                      onChange={(e) => handleInputChange('serialNumber', e.target.value)}
+                      placeholder="e.g., F2L987654321"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => startScanner('serialNumber')}
+                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md transition-colors whitespace-nowrap text-sm font-medium"
+                      title="Scan barcode or QR code"
+                    >
+                      Scan
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     IMEI Number
                   </label>
-                  <input
-                    type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    value={formData.imeiNumber}
-                    onChange={(e) => handleInputChange('imeiNumber', e.target.value)}
-                    placeholder="e.g., 351234567890123"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      value={formData.imeiNumber}
+                      onChange={(e) => handleInputChange('imeiNumber', e.target.value)}
+                      placeholder="e.g., 351234567890123"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => startScanner('imeiNumber')}
+                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md transition-colors whitespace-nowrap text-sm font-medium"
+                      title="Scan barcode or QR code"
+                    >
+                      Scan
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -1224,6 +1331,44 @@ export default function RepairFormPage() {
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
                 Position the device and tap Capture Photo to take a picture
               </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Barcode Scanner Modal */}
+      {isScannerActive && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="text-center">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Scan {scannerField === 'serialNumber' ? 'Serial Number' : 'IMEI Number'}
+              </h3>
+
+              <div className="relative mb-4">
+                <div 
+                  id="barcode-scanner" 
+                  ref={scannerDivRef}
+                  className="w-full rounded-lg overflow-hidden"
+                  style={{ minHeight: '300px' }}
+                />
+              </div>
+
+              <button
+                onClick={stopScanner}
+                className="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-sm font-medium transition-colors"
+              >
+                Cancel
+              </button>
+
+              <div className="mt-4 space-y-2">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Position the barcode or QR code within the scanning box
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  The scanner will automatically detect and fill the field
+                </p>
+              </div>
             </div>
           </div>
         </div>
