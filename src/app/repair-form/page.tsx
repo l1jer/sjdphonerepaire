@@ -579,9 +579,6 @@ export default function RepairFormPage() {
     
     // Stop the scanner
     stopScanner()
-    
-    // Show success message
-    alert(`${field === 'serialNumber' ? 'Serial Number' : 'IMEI Number'} scanned successfully: ${cleanedText}`)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
