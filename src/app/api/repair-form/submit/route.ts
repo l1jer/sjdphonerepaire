@@ -34,6 +34,9 @@ interface RepairFormData {
 
 import { storeFormData } from '@/lib/formDataStore'
 
+// Increase function timeout budget for large PDF/email flows
+export const maxDuration = 60
+
 // Generate case ID in format: DDMMYYYY-PHONENUMBER-FULLNAME
 function generateCaseId(data: RepairFormData): string {
   const date = new Date()

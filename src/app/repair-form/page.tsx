@@ -40,6 +40,11 @@ interface FormData {
 }
 
 export default function RepairFormPage() {
+  // Image upload constraints
+  const MAX_IMAGE_DIMENSION = 1600 // px on the longest side
+  const JPEG_QUALITY = 0.72 // compression quality
+  const MAX_TOTAL_UPLOAD_BYTES = 3984588 // ~3.8MB to stay under Vercel ~4.5MB cap with overhead
+
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [password, setPassword] = useState('')
   const [formData, setFormData] = useState<FormData>({
@@ -267,15 +272,77 @@ export default function RepairFormPage() {
     }
   }
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setDevicePhotos(prev => {
-        const newPhotos = [...prev]
-        newPhotos[index] = file
-        return newPhotos
+  function computeTotalBytes(files: (File | null)[]) {
+    return files.reduce((sum, f) => sum + (f?.size || 0), 0)
+  }
+
+  async function compressImage(file: File): Promise<File> {
+    try {
+      // Fast path: if already small, keep as is
+      if (file.size < 250 * 1024) return file
+
+      const img = new Image()
+      const objectUrl = URL.createObjectURL(file)
+      const loadResult = await new Promise<HTMLImageElement>((resolve, reject) => {
+        img.onload = () => resolve(img)
+        img.onerror = (err) => reject(err)
+        img.src = objectUrl
       })
+
+      const srcWidth = loadResult.naturalWidth || loadResult.width
+      const srcHeight = loadResult.naturalHeight || loadResult.height
+      if (!srcWidth || !srcHeight) {
+        URL.revokeObjectURL(objectUrl)
+        return file
+      }
+
+      const ratio = Math.min(MAX_IMAGE_DIMENSION / srcWidth, MAX_IMAGE_DIMENSION / srcHeight, 1)
+      const targetWidth = Math.round(srcWidth * ratio)
+      const targetHeight = Math.round(srcHeight * ratio)
+
+      const canvas = document.createElement('canvas')
+      canvas.width = targetWidth
+      canvas.height = targetHeight
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        URL.revokeObjectURL(objectUrl)
+        return file
+      }
+      ctx.drawImage(loadResult, 0, 0, targetWidth, targetHeight)
+
+      const blob: Blob | null = await new Promise((resolve) =>
+        canvas.toBlob(b => resolve(b), 'image/jpeg', JPEG_QUALITY)
+      )
+
+      URL.revokeObjectURL(objectUrl)
+      if (!blob) return file
+
+      // Keep original name but ensure jpeg extension
+      const newName = file.name.replace(/\.(heic|heif|png|webp|gif|bmp)$/i, '.jpg')
+      const compressed = new File([blob], newName, { type: 'image/jpeg', lastModified: Date.now() })
+      return compressed.size < file.size ? compressed : file
+    } catch {
+      return file
     }
+  }
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const compressed = await compressImage(file)
+
+    setDevicePhotos(prev => {
+      const newPhotos = [...prev]
+      newPhotos[index] = compressed
+      // Enforce total size guard proactively
+      const totalBytes = computeTotalBytes(newPhotos)
+      if (totalBytes > MAX_TOTAL_UPLOAD_BYTES) {
+        alert('Selected images are too large. Please reduce image sizes or select fewer images. Tip: use medium quality and max 1600px.')
+        return prev
+      }
+      return newPhotos
+    })
   }
 
   const addPhotoUpload = () => {
@@ -329,12 +396,17 @@ export default function RepairFormPage() {
 
     if (!ctx) return
 
-    // Set canvas size to match video
-    canvas.width = video.videoWidth
-    canvas.height = video.videoHeight
+    // Downscale to max dimension to keep file sizes small
+    const srcW = video.videoWidth
+    const srcH = video.videoHeight
+    const ratio = Math.min(MAX_IMAGE_DIMENSION / srcW, MAX_IMAGE_DIMENSION / srcH, 1)
+    const targetW = Math.max(1, Math.round(srcW * ratio))
+    const targetH = Math.max(1, Math.round(srcH * ratio))
+    canvas.width = targetW
+    canvas.height = targetH
 
     // Draw video frame to canvas
-    ctx.drawImage(video, 0, 0)
+    ctx.drawImage(video, 0, 0, targetW, targetH)
 
     // Convert canvas to blob
     canvas.toBlob((blob) => {
@@ -345,12 +417,17 @@ export default function RepairFormPage() {
         setDevicePhotos(prev => {
           const newPhotos = [...prev]
           newPhotos[cameraPhotoIndex] = file
+          const totalBytes = computeTotalBytes(newPhotos)
+          if (totalBytes > MAX_TOTAL_UPLOAD_BYTES) {
+            alert('Captured images are too large. Please retake at lower resolution or fewer images.')
+            return prev
+          }
           return newPhotos
         })
 
         stopCamera()
       }
-    }, 'image/jpeg', 0.9)
+    }, 'image/jpeg', JPEG_QUALITY)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -391,16 +468,32 @@ export default function RepairFormPage() {
         }
       })
 
+      // Enforce total payload guard before submit
+      const totalBytes = computeTotalBytes(devicePhotos)
+      if (totalBytes > MAX_TOTAL_UPLOAD_BYTES) {
+        setSubmitStatus({
+          type: 'error',
+          message: 'Images too large. Please compress or remove some photos and try again.'
+        })
+        setIsSubmitting(false)
+        return
+      }
+
       // Submit to API
-      // console.log('Submitting form to API...')
       const response = await fetch('/api/repair-form/submit', {
         method: 'POST',
         body: submissionData
       })
 
-      // console.log('API response status:', response.status)
-      const result = await response.json()
-      // console.log('API response:', result)
+      // Handle 413 or non-JSON responses gracefully
+      let result: any = null
+      const contentType = response.headers.get('content-type') || ''
+      if (contentType.includes('application/json')) {
+        result = await response.json()
+      } else {
+        const text = await response.text()
+        result = { error: text }
+      }
 
       if (response.ok) {
         // Reset form after successful submission to prevent old data persistence
