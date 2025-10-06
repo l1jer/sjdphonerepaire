@@ -2,14 +2,21 @@
 
 import { useTheme } from "next-themes"
 import { useEffect, useState } from "react"
+import { usePathname } from "next/navigation"
 
 export default function ThemeToggle() {
     const [mounted, setMounted] = useState(false)
     const { theme, setTheme } = useTheme()
+    const pathname = usePathname()
 
     useEffect(() => {
         setMounted(true)
     }, [])
+
+    // Hide theme toggle on repair form page
+    if (pathname?.startsWith('/repair-form')) {
+        return null
+    }
 
     if (!mounted) {
         return null
