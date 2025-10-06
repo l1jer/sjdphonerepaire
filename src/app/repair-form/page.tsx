@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import SignatureCanvas from 'react-signature-canvas'
 import { Html5Qrcode } from 'html5-qrcode'
+import Tesseract from 'tesseract.js'
 
 interface FormData {
   // Customer Information
@@ -88,8 +89,16 @@ export default function RepairFormPage() {
   // Barcode scanner functionality
   const [isScannerActive, setIsScannerActive] = useState<boolean>(false)
   const [scannerField, setScannerField] = useState<'serialNumber' | 'imeiNumber' | null>(null)
+  const [scanMode, setScanMode] = useState<'barcode' | 'text'>('barcode')
   const scannerRef = useRef<Html5Qrcode | null>(null)
   const scannerDivRef = useRef<HTMLDivElement>(null)
+  const ocrVideoRef = useRef<HTMLVideoElement>(null)
+  const ocrCanvasRef = useRef<HTMLCanvasElement>(null)
+  const [ocrStream, setOcrStream] = useState<MediaStream | null>(null)
+  const [isProcessingOcr, setIsProcessingOcr] = useState<boolean>(false)
+  const [showConfirmation, setShowConfirmation] = useState<boolean>(false)
+  const [capturedImage, setCapturedImage] = useState<string>('')
+  const [recognizedText, setRecognizedText] = useState<string>('')
   const [submitStatus, setSubmitStatus] = useState<{
     type: 'success' | 'error',
     message: string,
@@ -191,8 +200,11 @@ export default function RepairFormPage() {
           console.error('Error stopping scanner on unmount:', err)
         })
       }
+      if (ocrStream) {
+        ocrStream.getTracks().forEach(track => track.stop())
+      }
     }
-  }, [isScannerActive])
+  }, [isScannerActive, ocrStream])
 
   // Reset form to empty state
   const resetForm = () => {
@@ -517,10 +529,12 @@ export default function RepairFormPage() {
 
   // Barcode scanner functions
   const startScanner = async (field: 'serialNumber' | 'imeiNumber') => {
-    try {
-      setScannerField(field)
-      setIsScannerActive(true)
+    setScannerField(field)
+    setIsScannerActive(true)
+    setScanMode('barcode')
+    setShowConfirmation(false)
 
+    try {
       // Wait for the DOM to be ready
       await new Promise(resolve => setTimeout(resolve, 100))
 
@@ -540,9 +554,27 @@ export default function RepairFormPage() {
           qrbox: { width: 250, height: 250 }, // Scanning box size
           aspectRatio: 1.0
         },
-        (decodedText) => {
+        async (decodedText) => {
           // Success callback - barcode/QR code detected
-          handleScanSuccess(decodedText, field)
+          // Pause scanner and show confirmation
+          await scanner.pause(true)
+          
+          // Take a snapshot for confirmation
+          const canvas = document.createElement('canvas')
+          const videoElement = document.getElementById('barcode-scanner')?.querySelector('video')
+          
+          if (videoElement instanceof HTMLVideoElement) {
+            canvas.width = videoElement.videoWidth
+            canvas.height = videoElement.videoHeight
+            const ctx = canvas.getContext('2d')
+            if (ctx) {
+              ctx.drawImage(videoElement, 0, 0)
+              setCapturedImage(canvas.toDataURL('image/jpeg', 0.8))
+            }
+          }
+          
+          setRecognizedText(decodedText)
+          setShowConfirmation(true)
         },
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         (_errorMessage) => {
@@ -556,6 +588,187 @@ export default function RepairFormPage() {
     }
   }
 
+  const startTextScanner = async (field: 'serialNumber' | 'imeiNumber') => {
+    try {
+      setScannerField(field)
+      setIsScannerActive(true)
+      setScanMode('text')
+      setShowConfirmation(false)
+
+      // Wait for DOM to be ready
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: 'environment',
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        }
+      })
+
+      setOcrStream(stream)
+
+      if (ocrVideoRef.current) {
+        ocrVideoRef.current.srcObject = stream
+        ocrVideoRef.current.play()
+      }
+    } catch (error) {
+      console.error('Error starting text scanner:', error)
+      alert('Unable to access camera. Please check camera permissions and try again.')
+      stopScanner()
+    }
+  }
+
+  const captureAndRecognizeText = async () => {
+    if (!ocrVideoRef.current || !ocrCanvasRef.current || !scannerField) return
+
+    setIsProcessingOcr(true)
+
+    try {
+      const video = ocrVideoRef.current
+      const canvas = ocrCanvasRef.current
+      const ctx = canvas.getContext('2d')
+
+      if (!ctx) return
+
+      // Set canvas size to match video
+      canvas.width = video.videoWidth
+      canvas.height = video.videoHeight
+
+      // Draw current video frame to canvas
+      ctx.drawImage(video, 0, 0)
+
+      // Save captured image for confirmation
+      const capturedImageData = canvas.toDataURL('image/jpeg', 0.8)
+      setCapturedImage(capturedImageData)
+
+      // Convert canvas to blob
+      canvas.toBlob(async (blob) => {
+        if (blob) {
+          // Perform OCR on the image
+          const result = await Tesseract.recognize(
+            blob,
+            'eng',
+            {
+              logger: () => {}, // Suppress logging
+            }
+          )
+
+          // Extract text and clean it
+          const recognizedText = result.data.text.trim()
+          
+          // Extract numbers and common serial number patterns
+          const cleanedText = extractSerialNumber(recognizedText)
+
+          if (cleanedText) {
+            setRecognizedText(cleanedText)
+            setShowConfirmation(true)
+            setIsProcessingOcr(false)
+          } else {
+            alert('No valid serial number or IMEI detected. Please try again with better lighting or angle.')
+            setIsProcessingOcr(false)
+          }
+        }
+      }, 'image/png')
+    } catch (error) {
+      console.error('Error recognizing text:', error)
+      alert('Failed to recognize text. Please try again.')
+      setIsProcessingOcr(false)
+    }
+  }
+
+  const extractSerialNumber = (text: string): string => {
+    // Remove whitespace and common labels
+    let cleaned = text.replace(/\s+/g, '')
+    cleaned = cleaned.replace(/IMEI|SERIAL|SN|S\/N|:/gi, '')
+    
+    // Look for common serial number patterns
+    // IMEI: 15 digits
+    const imeiPattern = /\d{15}/
+    const imeiMatch = cleaned.match(imeiPattern)
+    if (imeiMatch) return imeiMatch[0]
+
+    // Serial numbers: alphanumeric, typically 8-20 characters
+    const serialPattern = /[A-Z0-9]{8,20}/i
+    const serialMatch = cleaned.match(serialPattern)
+    if (serialMatch) return serialMatch[0]
+
+    // Return cleaned text if patterns don't match but has alphanumeric
+    if (/[A-Z0-9]{5,}/i.test(cleaned)) {
+      const alphanumericMatch = cleaned.match(/[A-Z0-9]{5,}/i)
+      return alphanumericMatch ? alphanumericMatch[0] : ''
+    }
+
+    return ''
+  }
+
+  const confirmScan = () => {
+    if (recognizedText && scannerField) {
+      handleScanSuccess(recognizedText, scannerField)
+    }
+  }
+
+  const retakeScan = async () => {
+    setShowConfirmation(false)
+    setCapturedImage('')
+    setRecognizedText('')
+    
+    // Restart scanner based on mode
+    const currentField = scannerField
+    const currentMode = scanMode
+    
+    if (currentMode === 'barcode') {
+      // Stop and restart barcode scanner
+      if (scannerRef.current) {
+        try {
+          await scannerRef.current.stop()
+          scannerRef.current.clear()
+          scannerRef.current = null
+        } catch (error) {
+          console.error('Error stopping barcode scanner:', error)
+        }
+      }
+      
+      // Wait a moment then restart
+      await new Promise(resolve => setTimeout(resolve, 200))
+      
+      if (currentField) {
+        startScanner(currentField)
+      }
+    } else {
+      // For text mode, need to restart camera stream completely
+      setIsProcessingOcr(false)
+      
+      // Stop existing stream
+      if (ocrStream) {
+        ocrStream.getTracks().forEach(track => track.stop())
+        setOcrStream(null)
+      }
+      
+      // Wait a moment for cleanup
+      await new Promise(resolve => setTimeout(resolve, 200))
+      
+      // Restart text scanner
+      if (currentField) {
+        startTextScanner(currentField)
+      }
+    }
+  }
+
+  const switchScanMode = async () => {
+    // Stop current scanner
+    await stopScanner()
+    
+    // Start the other mode
+    if (scannerField) {
+      if (scanMode === 'barcode') {
+        startTextScanner(scannerField)
+      } else {
+        startScanner(scannerField)
+      }
+    }
+  }
+
   const stopScanner = async () => {
     if (scannerRef.current) {
       try {
@@ -566,8 +779,13 @@ export default function RepairFormPage() {
         console.error('Error stopping scanner:', error)
       }
     }
+    if (ocrStream) {
+      ocrStream.getTracks().forEach(track => track.stop())
+      setOcrStream(null)
+    }
     setIsScannerActive(false)
     setScannerField(null)
+    setIsProcessingOcr(false)
   }
 
   const handleScanSuccess = (decodedText: string, field: 'serialNumber' | 'imeiNumber') => {
@@ -1333,39 +1551,144 @@ export default function RepairFormPage() {
         </div>
       )}
 
-      {/* Barcode Scanner Modal */}
+      {/* Scanner Modal */}
       {isScannerActive && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="text-center">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Scan {scannerField === 'serialNumber' ? 'Serial Number' : 'IMEI Number'}
-              </h3>
+              {!showConfirmation ? (
+                <>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    Scan {scannerField === 'serialNumber' ? 'Serial Number' : 'IMEI Number'}
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    Mode: {scanMode === 'barcode' ? 'Barcode/QR Code' : 'Printed Text'}
+                  </p>
 
-              <div className="relative mb-4">
-                <div 
-                  id="barcode-scanner" 
-                  ref={scannerDivRef}
-                  className="w-full rounded-lg overflow-hidden"
-                  style={{ minHeight: '300px' }}
-                />
-              </div>
+                  <div className="relative mb-4">
+                    {scanMode === 'barcode' ? (
+                      <div 
+                        id="barcode-scanner" 
+                        ref={scannerDivRef}
+                        className="w-full rounded-lg overflow-hidden bg-black"
+                        style={{ minHeight: '300px' }}
+                      />
+                    ) : (
+                      <div className="relative">
+                        <video
+                          ref={ocrVideoRef}
+                          autoPlay
+                          playsInline
+                          muted
+                          className="w-full h-64 bg-black rounded-lg object-cover"
+                        />
+                        <canvas ref={ocrCanvasRef} className="hidden" />
+                        {isProcessingOcr && (
+                          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
+                            <div className="text-white text-sm">Processing...</div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
 
-              <button
-                onClick={stopScanner}
-                className="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-sm font-medium transition-colors"
-              >
-                Cancel
-              </button>
+                  <div className="flex gap-3 justify-center mb-4 flex-wrap">
+                    {scanMode === 'text' && (
+                      <button
+                        onClick={captureAndRecognizeText}
+                        disabled={isProcessingOcr}
+                        className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                      >
+                        {isProcessingOcr ? 'Processing...' : 'Capture Text'}
+                      </button>
+                    )}
+                    <button
+                      onClick={switchScanMode}
+                      className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors"
+                    >
+                      Switch to {scanMode === 'barcode' ? 'Text' : 'Barcode'}
+                    </button>
+                    <button
+                      onClick={stopScanner}
+                      className="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-sm font-medium transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
 
-              <div className="mt-4 space-y-2">
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Position the barcode or QR code within the scanning box
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  The scanner will automatically detect and fill the field
-                </p>
-              </div>
+                  <div className="mt-2 space-y-2">
+                    {scanMode === 'barcode' ? (
+                      <>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Position the barcode or QR code within the scanning box
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Auto-detects when found
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Position the printed text clearly in view
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Tap &apos;Capture Text&apos; when ready
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    Confirm Scanned Result
+                  </h3>
+
+                  {capturedImage && (
+                    <div className="mb-4">
+                      <img 
+                        src={capturedImage} 
+                        alt="Captured" 
+                        className="w-full rounded-lg border-2 border-gray-300 dark:border-gray-600"
+                      />
+                    </div>
+                  )}
+
+                  <div className="mb-4 p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                      {scannerField === 'serialNumber' ? 'Serial Number' : 'IMEI Number'} detected:
+                    </p>
+                    <p className="text-xl font-bold text-gray-900 dark:text-white break-all">
+                      {recognizedText}
+                    </p>
+                  </div>
+
+                  <div className="flex gap-3 justify-center flex-wrap">
+                    <button
+                      onClick={confirmScan}
+                      className="px-8 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors"
+                    >
+                      Confirm
+                    </button>
+                    <button
+                      onClick={retakeScan}
+                      className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors"
+                    >
+                      Retake
+                    </button>
+                    <button
+                      onClick={stopScanner}
+                      className="px-8 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-sm font-medium transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">
+                    Review the detected value and confirm if correct, or retake if needed
+                  </p>
+                </>
+              )}
             </div>
           </div>
         </div>
