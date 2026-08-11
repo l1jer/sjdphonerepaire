@@ -10,6 +10,10 @@ export default function ThemeToggle() {
     const pathname = usePathname()
 
     useEffect(() => {
+        // Standard hydration-safe "mounted" flag: this must run in an effect
+        // because it needs to detect that client-side hydration has completed,
+        // which has no non-effect equivalent.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setMounted(true)
     }, [])
 

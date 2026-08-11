@@ -1,6 +1,6 @@
 # SJD Tech Phone & Tablet Repairs
 
-A modern, SEO-optimized website for SJD Tech's phone and tablet repair services. Built with Next.js 15, featuring Redis-cached reviews, comprehensive repair form system, and mobile-first design.
+A modern, SEO-optimized website for SJD Tech's phone and tablet repair services. Built with Next.js 16, featuring Redis-cached reviews, comprehensive repair form system, and mobile-first design.
 
 ## 🚀 Features
 
@@ -34,8 +34,8 @@ A modern, SEO-optimized website for SJD Tech's phone and tablet repair services.
 ## 🛠️ Quick Start
 
 ### Prerequisites
-- Node.js 18+
-- npm/yarn/pnpm
+- Node.js 20.9+ (required by Next.js 16)
+- npm
 - Vercel account (for deployment)
 
 ### Installation
@@ -309,7 +309,7 @@ curl -X POST http://localhost:3000/api/repair-form/download/SJD-TEST-001 \
 - **99% API Call Reduction**: Weekly sync vs per-user requests
 - **Instant Loading**: Redis cache for sub-second response
 - **Smart Fallbacks**: Multiple cache layers ensure reliability
-- **Rolling Cache**: Maintains exactly 15 reviews with newest priority
+- **Rolling Cache**: Maintains up to 30 unique 5-star reviews, topped up from an accumulated historical pool (rather than duplicating the same few reviews) whenever a fresh sync doesn't return enough
 
 ### Image Optimisation
 - **Proportional Scaling**: Images maintain aspect ratio in PDFs
@@ -374,6 +374,6 @@ This project is private and proprietary to SJD Tech.
 
 ---
 
-**Built with**: Next.js 15, React, TypeScript, Tailwind CSS, Redis, Google Places API
+**Built with**: Next.js 16, React, TypeScript, Tailwind CSS, Redis, Google Places API
 **Deployed on**: Vercel with automatic scaling
 **Performance**: 99% Google API cost reduction, instant loading reviews

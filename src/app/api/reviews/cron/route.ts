@@ -4,6 +4,7 @@ import { Redis } from '@upstash/redis'
 interface Review {
   time: number
   author_name: string
+  rating: number
 }
 
 interface CachedData {
@@ -23,6 +24,11 @@ const redis = new Redis({
 
 const CACHE_KEY = 'google_reviews_cache'
 const HISTORICAL_CACHE_KEY = 'google_reviews_historical'
+
+// Only 5-star reviews are shown publicly on the site
+function filterFiveStarReviews (reviews: Review[]): Review[] {
+  return reviews.filter(review => review.rating === 5)
+}
 
 export async function GET (request: Request) {
   // Verify cron secret to ensure this is a legitimate cron job
@@ -47,10 +53,10 @@ export async function GET (request: Request) {
         total_collected: 0
       }
 
-      // Merge new reviews with historical data
+      // Merge new reviews with historical data, keeping only 5-star reviews
       const mergedReviews = mergeReviews(
         historicalReviews.reviews,
-        currentCache.reviews
+        filterFiveStarReviews(currentCache.reviews)
       )
 
       // Store merged data
@@ -81,16 +87,12 @@ export async function GET (request: Request) {
 }
 
 function mergeReviews (historical: Review[], current: Review[]): Review[] {
-  // Create a Set of existing review IDs (using time + author as unique identifier)
-  const existingReviews = new Set(
-    historical.map(review => `${review.time}_${review.author_name}`)
-  )
+  // Dedupe across both lists (using time + author as the unique identifier), since
+  // independent sync/cron endpoints can otherwise reintroduce duplicate entries
+  const merged = new Map<string, Review>()
+  for (const review of [...historical, ...current]) {
+    merged.set(`${review.time}_${review.author_name}`, review)
+  }
 
-  // Add new unique reviews
-  const newReviews = current.filter(
-    review => !existingReviews.has(`${review.time}_${review.author_name}`)
-  )
-
-  // Merge and sort by time
-  return [...historical, ...newReviews].sort((a, b) => b.time - a.time)
+  return [...merged.values()].sort((a, b) => b.time - a.time)
 }

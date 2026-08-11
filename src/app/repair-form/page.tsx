@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import SignatureCanvas from 'react-signature-canvas'
 import { Html5Qrcode } from 'html5-qrcode'
 import Tesseract from 'tesseract.js'
@@ -42,6 +43,7 @@ interface FormData {
 }
 
 export default function RepairFormPage() {
+  const router = useRouter()
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [password, setPassword] = useState('')
   const [formData, setFormData] = useState<FormData>({
@@ -75,7 +77,7 @@ export default function RepairFormPage() {
   
   const [signature, setSignature] = useState<string>('')
   const [signatureSaved, setSignatureSaved] = useState<boolean>(false)
-  const [devicePhotos, setDevicePhotos] = useState<(File | null)[]>([])
+  const [devicePhotos, setDevicePhotos] = useState<(File | null)[]>([null])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDownloadingPDF, setIsDownloadingPDF] = useState(false)
 
@@ -176,13 +178,6 @@ export default function RepairFormPage() {
     return () => clearTimeout(timer)
   }, [canvasCssSize])
 
-  // Initialize with one photo upload field
-  useEffect(() => {
-    if (devicePhotos.length === 0) {
-      setDevicePhotos([null])
-    }
-  }, [devicePhotos.length])
-
   // Cleanup camera on unmount
   useEffect(() => {
     return () => {
@@ -238,7 +233,7 @@ export default function RepairFormPage() {
     })
     setSignature('')
     setSignatureSaved(false)
-    setDevicePhotos([])
+    setDevicePhotos([null])
   }
 
   // Simple authentication for internal use
@@ -1490,7 +1485,7 @@ export default function RepairFormPage() {
               <div className="flex justify-end space-x-4">
                 <button
                   type="button"
-                  onClick={() => window.location.href = '/'}
+                  onClick={() => router.push('/')}
                   className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
                 >
                   Cancel
@@ -1646,6 +1641,11 @@ export default function RepairFormPage() {
 
                   {capturedImage && (
                     <div className="mb-4">
+                      {/* eslint-disable-next-line @next/next/no-img-element -- capturedImage is a
+                          base64 data URI from a live camera capture (canvas.toDataURL) with
+                          dimensions that vary per device; next/image requires known dimensions
+                          or a fixed aspect ratio, neither of which applies here, and there is no
+                          remote fetch for it to optimise */}
                       <img 
                         src={capturedImage} 
                         alt="Captured" 

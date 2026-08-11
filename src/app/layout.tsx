@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import Footer from '@/components/footer'
 import ThemeToggle from '@/components/ThemeToggle'
 import ScrollToTop from '@/components/ScrollToTop'
+
 // import Nav from '@/components/nav'
 
 const inter = Inter({ subsets: ["latin"] });

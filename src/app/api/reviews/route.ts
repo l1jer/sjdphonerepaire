@@ -62,10 +62,42 @@ const CACHE_KEY = 'google_reviews_cache'
 const WEEKLY_CACHE_KEY = 'reviews_weekly_cache'
 const CACHE_DURATION = 24 * 60 * 60 // 24 hours in seconds
 const HISTORICAL_CACHE_KEY = 'google_reviews_historical'
+// Google only returns a handful of reviews per API call, so the display cache is
+// topped up from the accumulated historical pool to give more variety on the site
+const TARGET_REVIEW_COUNT = 30
 
 // Only 5-star reviews are shown publicly on the site
 function filterFiveStarReviews (reviews: Review[]): Review[] {
   return reviews.filter(review => review.rating === 5)
+}
+
+function reviewKey (review: Review): string {
+  return `${review.time}_${review.author_name}`
+}
+
+// Tops up a review list from the historical pool, preferring the newest unseen
+// 5-star reviews, so the display cache draws on all reviews ever collected
+// rather than duplicating the same small batch
+async function topUpFromHistorical (existing: Review[], neededCount: number): Promise<Review[]> {
+  if (neededCount <= 0) return []
+
+  const historicalData = await redis.get<HistoricalData>(HISTORICAL_CACHE_KEY)
+  if (!historicalData?.reviews) return []
+
+  const existingKeys = new Set(existing.map(reviewKey))
+  // Historical pool can contain duplicate entries for the same review (accumulated
+  // across many sync runs), so dedupe it before drawing candidates from it
+  const uniqueHistorical = new Map<string, Review>()
+  for (const review of filterFiveStarReviews(historicalData.reviews)) {
+    const key = reviewKey(review)
+    if (!existingKeys.has(key) && !uniqueHistorical.has(key)) {
+      uniqueHistorical.set(key, review)
+    }
+  }
+
+  return [...uniqueHistorical.values()]
+    .sort((a, b) => b.time - a.time)
+    .slice(0, neededCount)
 }
 
 async function getAllReviews (
@@ -116,8 +148,8 @@ async function getAllReviews (
     await new Promise(resolve => setTimeout(resolve, 2000))
   }
 
-  // Sort by time, newest first, and return exactly 15 reviews
-  return allReviews.sort((a, b) => b.time - a.time).slice(0, 15)
+  // Sort by time, newest first
+  return allReviews.sort((a, b) => b.time - a.time).slice(0, TARGET_REVIEW_COUNT)
 }
 
 // API route for handling reviews
@@ -136,10 +168,13 @@ export async function GET () {
     const weeklyCache = await redis.get<ResponseData>(WEEKLY_CACHE_KEY)
     if (weeklyCache) {
       console.log('Weekly cache hit! Serving from weekly Redis cache')
-      // Purge any non-5-star reviews left over from before the rating filter was added
+      // Purge any non-5-star reviews left over from before the rating filter was added,
+      // and top up from the historical pool if the cache is short of the target count
+      const cleanReviews = filterFiveStarReviews(weeklyCache.reviews)
+      const supplemental = await topUpFromHistorical(cleanReviews, TARGET_REVIEW_COUNT - cleanReviews.length)
       return NextResponse.json({
         ...weeklyCache,
-        reviews: filterFiveStarReviews(weeklyCache.reviews)
+        reviews: [...cleanReviews, ...supplemental]
       })
     }
     
@@ -148,9 +183,11 @@ export async function GET () {
     const dailyCache = await redis.get<ResponseData>(CACHE_KEY)
     if (dailyCache) {
       console.log('Daily cache hit! Serving from daily Redis cache')
+      const cleanReviews = filterFiveStarReviews(dailyCache.reviews)
+      const supplemental = await topUpFromHistorical(cleanReviews, TARGET_REVIEW_COUNT - cleanReviews.length)
       return NextResponse.json({
         ...dailyCache,
-        reviews: filterFiveStarReviews(dailyCache.reviews)
+        reviews: [...cleanReviews, ...supplemental]
       })
     }
     
@@ -172,7 +209,7 @@ export async function GET () {
     const basicInfoResponse = await fetch(basicInfoUrl.toString())
     const basicInfoData: PlaceDetailsResponse = await basicInfoResponse.json()
 
-    // Implement rolling cache logic to maintain exactly 15 reviews
+    // Implement rolling cache logic to maintain a large, varied pool of reviews
     let finalReviews = allReviews
 
     // Check if we have existing reviews in weekly cache first
@@ -198,34 +235,43 @@ export async function GET () {
       // Sort by time (newest first)
       const sortedReviews = mergedReviews.sort((a, b) => b.time - a.time)
       
-      // If we have fewer than 15 unique reviews, duplicate to reach 15
-      if (sortedReviews.length < 15) {
-        finalReviews = [...sortedReviews]
-        while (finalReviews.length < 15) {
-          const remainingSlots = 15 - finalReviews.length
-          const reviewsToAdd = sortedReviews.slice(0, Math.min(remainingSlots, sortedReviews.length))
-          finalReviews = [...finalReviews, ...reviewsToAdd]
+      if (sortedReviews.length < TARGET_REVIEW_COUNT) {
+        // Top up from the historical pool of unique 5-star reviews before ever duplicating
+        const supplemental = await topUpFromHistorical(sortedReviews, TARGET_REVIEW_COUNT - sortedReviews.length)
+        finalReviews = [...sortedReviews, ...supplemental]
+        console.log(`[Daily Sync] Topped up ${sortedReviews.length} unique reviews with ${supplemental.length} from historical pool → ${finalReviews.length} total`)
+
+        // Only duplicate as a last resort if the historical pool still isn't enough
+        if (finalReviews.length < TARGET_REVIEW_COUNT && finalReviews.length > 0) {
+          const pool = [...finalReviews]
+          while (finalReviews.length < TARGET_REVIEW_COUNT) {
+            const remainingSlots = TARGET_REVIEW_COUNT - finalReviews.length
+            finalReviews = [...finalReviews, ...pool.slice(0, Math.min(remainingSlots, pool.length))]
+          }
+          console.log(`[Daily Sync] Historical pool exhausted, padded to ${finalReviews.length} total`)
         }
-        console.log(`[Daily Sync] Padded ${sortedReviews.length} unique reviews to ${finalReviews.length} total`)
       } else {
-        // Take exactly 15 if we have more than 15
-        finalReviews = sortedReviews.slice(0, 15)
-        console.log(`[Daily Sync] Rolling cache: ${mergedReviews.length} total → ${finalReviews.length} kept (15 limit)`)
+        // Take the newest TARGET_REVIEW_COUNT if we have more than that
+        finalReviews = sortedReviews.slice(0, TARGET_REVIEW_COUNT)
+        console.log(`[Daily Sync] Rolling cache: ${mergedReviews.length} total → ${finalReviews.length} kept (${TARGET_REVIEW_COUNT} limit)`)
       }
     } else {
-      // No existing cache, pad with duplicates if needed to reach exactly 15
+      // No existing cache, top up from the historical pool before ever duplicating
       if (allReviews.length > 0) {
         finalReviews = [...allReviews]
-        
-        // Duplicate reviews to reach exactly 15
-        while (finalReviews.length < 15) {
-          const remainingSlots = 15 - finalReviews.length
-          const reviewsToAdd = allReviews.slice(0, Math.min(remainingSlots, allReviews.length))
-          finalReviews = [...finalReviews, ...reviewsToAdd]
+
+        const supplemental = await topUpFromHistorical(finalReviews, TARGET_REVIEW_COUNT - finalReviews.length)
+        finalReviews = [...finalReviews, ...supplemental]
+
+        if (finalReviews.length < TARGET_REVIEW_COUNT) {
+          const pool = [...finalReviews]
+          while (finalReviews.length < TARGET_REVIEW_COUNT) {
+            const remainingSlots = TARGET_REVIEW_COUNT - finalReviews.length
+            finalReviews = [...finalReviews, ...pool.slice(0, Math.min(remainingSlots, pool.length))]
+          }
         }
-        
-        // Ensure exactly 15 reviews
-        finalReviews = finalReviews.slice(0, 15)
+
+        finalReviews = finalReviews.slice(0, TARGET_REVIEW_COUNT)
       }
       console.log(`[Daily Sync] No existing cache, created initial set of ${finalReviews.length} reviews (from ${allReviews.length} originals)`)
     }

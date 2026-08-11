@@ -73,17 +73,14 @@ export default function Reviews() {
 
   // Function to create review columns for infinite scrolling
   const createColumns = useCallback((reviews: Review[]) => {
-    // Redis cache now maintains exactly 15 reviews with rolling replacement
-    // No need for client-side duplication logic
-    const exactReviews = reviews.slice(0, 15)
-    
-    // For desktop: 3 columns with 5 reviews each
+    // Split the full pool of reviews evenly across columns so each column
+    // shows a different set, rather than every column repeating the same reviews
     const columnCount = 3
-    const reviewsPerColumn = 5
+    const reviewsPerColumn = Math.ceil(reviews.length / columnCount)
 
     const columns = Array(columnCount).fill(null).map((_, columnIndex) => {
       const startIndex = columnIndex * reviewsPerColumn
-      const columnReviews = exactReviews.slice(startIndex, startIndex + reviewsPerColumn)
+      const columnReviews = reviews.slice(startIndex, startIndex + reviewsPerColumn)
 
       // Create seamless infinite scroll by duplicating the column content
       return [...columnReviews, ...columnReviews] // Double for seamless loop
@@ -94,10 +91,8 @@ export default function Reviews() {
 
   // Function to create mobile single column layout
   const createMobileColumn = useCallback((reviews: Review[]) => {
-    // Redis cache maintains exactly 15 reviews, use them all for mobile
-    const exactReviews = reviews.slice(0, 15)
     // Double the content for seamless infinite scroll
-    return [...exactReviews, ...exactReviews]
+    return [...reviews, ...reviews]
   }, [])
 
   const ReviewCard = ({ review }: { review: Review }) => {
@@ -176,6 +171,12 @@ export default function Reviews() {
   const columns = createColumns(data.reviews)
   const mobileColumn = createMobileColumn(data.reviews)
 
+  // Scale scroll duration with the review count so the reading pace per review
+  // stays consistent regardless of how many reviews are in the pool
+  const reviewsPerColumn = Math.ceil(data.reviews.length / 3)
+  const desktopBaseDuration = 12 * reviewsPerColumn // ~12s per review
+  const mobileDuration = 6 * data.reviews.length // ~6s per review
+
   return (
     <section id="reviews" className="relative bg-background-light dark:bg-background-darker py-16 sm:py-20">
       {/* Title Section with higher z-index */}
@@ -215,14 +216,14 @@ export default function Reviews() {
         <div className="absolute inset-x-0 top-0 h-16 sm:h-24 md:h-32 bg-gradient-to-b from-background-light dark:from-background-darker to-transparent z-20" />
         <div className="absolute inset-x-0 bottom-0 h-16 sm:h-24 md:h-32 bg-gradient-to-t from-background-light dark:from-background-darker to-transparent z-20" />
 
-        {/* Mobile: Single column with all 15 reviews */}
+        {/* Mobile: Single column with the full review pool */}
         <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:hidden">
           <div className="flex justify-center max-w-md mx-auto">
             <div
               className="animate-scroll w-full"
               style={{
-                animation: `scrollDown 90s linear infinite`,
-                animationDelay: `-30s`
+                animation: `scrollDown ${mobileDuration}s linear infinite`,
+                animationDelay: `${-mobileDuration / 3}s`
               }}
             >
               {mobileColumn.map((review, reviewIndex) => (
@@ -235,7 +236,7 @@ export default function Reviews() {
           </div>
         </div>
 
-        {/* Desktop: 3 columns with 5 reviews each */}
+        {/* Desktop: 3 columns, reviews split evenly across them */}
         <div className="relative z-10 container mx-auto px-4 sm:px-6 hidden lg:block">
           <div className="grid grid-cols-3 gap-6 max-w-7xl mx-auto">
             {columns.map((column, columnIndex) => (
@@ -243,8 +244,8 @@ export default function Reviews() {
                 key={columnIndex}
                 className="animate-scroll"
                 style={{
-                  animation: `scroll${columnIndex % 2 === 0 ? 'Down' : 'Up'} ${60 + columnIndex * 10}s linear infinite`,
-                  animationDelay: `${columnIndex * -20}s`
+                  animation: `scroll${columnIndex % 2 === 0 ? 'Down' : 'Up'} ${desktopBaseDuration + columnIndex * 10}s linear infinite`,
+                  animationDelay: `${columnIndex * -(desktopBaseDuration / 3)}s`
                 }}
               >
                 {column.map((review, reviewIndex) => (
