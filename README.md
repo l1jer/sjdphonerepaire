@@ -12,6 +12,7 @@ A modern, SEO-optimized website for SJD Tech's phone and tablet repair services.
 
 ### ⭐ **Smart Reviews System**
 - **Weekly Redis Sync**: Automatic Google Places API sync every Monday
+- **5-Star Only**: Only 5-star reviews are synced and displayed; lower-rated reviews are filtered out at fetch time and purged from the cache on every sync
 - **Instant Loading**: Cached reviews for fast user experience
 - **Infinite Scrolling**: Smooth animations with no flash-back
 - **Cost Efficient**: 99% reduction in Google API calls

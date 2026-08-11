@@ -40,10 +40,16 @@ const REVIEWS_CACHE_KEY = 'reviews_weekly_cache'
 const CACHE_DURATION = 7 * 24 * 60 * 60 // 7 days in seconds
 const HISTORICAL_CACHE_KEY = 'google_reviews_historical'
 
+// Only 5-star reviews are shown publicly on the site
+function filterFiveStarReviews(reviews: Review[]): Review[] {
+  return reviews.filter(review => review.rating === 5)
+}
+
 async function getAllReviews(placeId: string, apiKey: string): Promise<Review[]> {
   let allReviews: Review[] = []
-  // Expanded sort types to get more reviews
-  const sortTypes = ['most_relevant', 'newest', 'highest_rating', 'lowest_rating']
+  // Only sort types that surface positive reviews; 'lowest_rating' is intentionally
+  // excluded so 1-3 star reviews never enter the pool of reviews we display
+  const sortTypes = ['most_relevant', 'newest', 'highest_rating']
 
   for (const sortType of sortTypes) {
     try {
@@ -113,8 +119,10 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Fetch all reviews from Google Places API
-    const allReviews = await getAllReviews(PLACE_ID, GOOGLE_PLACES_API_KEY)
+    // Fetch all reviews from Google Places API, keeping only 5-star reviews
+    const allReviews = filterFiveStarReviews(
+      await getAllReviews(PLACE_ID, GOOGLE_PLACES_API_KEY)
+    )
 
     // Get basic place information
     const basicInfoUrl = new URL('https://maps.googleapis.com/maps/api/place/details/json')
@@ -134,8 +142,9 @@ export async function GET(request: Request) {
     if (existingCache && existingCache.reviews) {
       console.log(`[Weekly Sync] Found ${existingCache.reviews.length} existing reviews in cache`)
       
-      // Merge existing and new reviews, removing duplicates
-      const existingReviews = existingCache.reviews
+      // Purge any non-5-star reviews left over from previous syncs, then merge in new ones
+      const existingReviews = filterFiveStarReviews(existingCache.reviews)
+      console.log(`[Weekly Sync] ${existingCache.reviews.length - existingReviews.length} non-5-star reviews purged from cache`)
       const mergedReviews = [...existingReviews]
       
       // Add new reviews that don't already exist

@@ -63,6 +63,11 @@ const WEEKLY_CACHE_KEY = 'reviews_weekly_cache'
 const CACHE_DURATION = 24 * 60 * 60 // 24 hours in seconds
 const HISTORICAL_CACHE_KEY = 'google_reviews_historical'
 
+// Only 5-star reviews are shown publicly on the site
+function filterFiveStarReviews (reviews: Review[]): Review[] {
+  return reviews.filter(review => review.rating === 5)
+}
+
 async function getAllReviews (
   placeId: string,
   apiKey: string
@@ -128,24 +133,33 @@ export async function GET () {
   try {
     // First, check weekly cache (primary source)
     console.log('Checking weekly Redis cache...')
-    const weeklyCache = await redis.get(WEEKLY_CACHE_KEY)
+    const weeklyCache = await redis.get<ResponseData>(WEEKLY_CACHE_KEY)
     if (weeklyCache) {
       console.log('Weekly cache hit! Serving from weekly Redis cache')
-      return NextResponse.json(weeklyCache)
+      // Purge any non-5-star reviews left over from before the rating filter was added
+      return NextResponse.json({
+        ...weeklyCache,
+        reviews: filterFiveStarReviews(weeklyCache.reviews)
+      })
     }
     
     // Fallback to daily cache
     console.log('Weekly cache miss! Checking daily Redis cache...')
-    const dailyCache = await redis.get(CACHE_KEY)
+    const dailyCache = await redis.get<ResponseData>(CACHE_KEY)
     if (dailyCache) {
       console.log('Daily cache hit! Serving from daily Redis cache')
-      return NextResponse.json(dailyCache)
+      return NextResponse.json({
+        ...dailyCache,
+        reviews: filterFiveStarReviews(dailyCache.reviews)
+      })
     }
     
     console.log('No cache found! Fetching from Google API as fallback...')
 
-    // 获取所有评论
-    const allReviews = await getAllReviews(PLACE_ID, GOOGLE_PLACES_API_KEY)
+    // Fetch fresh reviews, keeping only 5-star reviews
+    const allReviews = filterFiveStarReviews(
+      await getAllReviews(PLACE_ID, GOOGLE_PLACES_API_KEY)
+    )
 
     // 获取基本信息
     const basicInfoUrl = new URL(
@@ -167,8 +181,8 @@ export async function GET () {
     if (existingWeeklyCache && existingWeeklyCache.reviews) {
       console.log(`[Daily Sync] Found ${existingWeeklyCache.reviews.length} existing reviews in weekly cache`)
       
-      // Merge existing and new reviews, removing duplicates
-      const existingReviews = existingWeeklyCache.reviews
+      // Purge any non-5-star reviews left over from previous syncs, then merge in new ones
+      const existingReviews = filterFiveStarReviews(existingWeeklyCache.reviews)
       const mergedReviews = [...existingReviews]
       
       // Add new reviews that don't already exist
