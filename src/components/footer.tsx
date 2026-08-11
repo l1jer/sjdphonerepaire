@@ -36,7 +36,7 @@ export default function Footer() {
                         <p className="text-sm text-gray-600 dark:text-gray-400">
                             Crafted by{' '}
                             <Link
-                                href="https://digolas-forge.com/"
+                                href="https://digolasforge.com/"
                                 className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors font-medium"
                             >
                                 Digolas Forge
